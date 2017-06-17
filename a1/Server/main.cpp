@@ -76,7 +76,7 @@ int dealWithClient(int size, int new_fd) {
   } else {
     //char buf[size]; 
     numbytes = recv(new_fd, fdToBuf[new_fd] + fdToRecv[new_fd], size - fdToRecv[new_fd], 0);
-    if (numbytes < 0) {
+    if (numbytes <= 0) {
       std::cerr << "Connection " << new_fd <<" is closed." << std::endl;
       delete [] fdToBuf[new_fd];
       fdToRecv.erase(new_fd);

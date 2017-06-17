@@ -31,7 +31,7 @@ void *get_in_addr(struct sockaddr *sa) {
   return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-void *PrintHello(void *threadid) {
+void *QueueManager(void *threadid) {
   int signal = 0;
   while(true) {
     std::string tmp = "";
@@ -131,8 +131,8 @@ int main() {
 
   char* server_address;
   char* server_port;
-  server_address = getenv("SEVER_ADDRESS");
-  server_port = getenv("SEVER_PORT");
+  server_address = getenv("SERVER_ADDRESS");
+  server_port = getenv("SERVER_PORT");
   if (server_address != nullptr && server_port != nullptr) {
     //std::cout << server_address << std::endl;
     //std::cout << server_port << std::endl;
@@ -190,7 +190,7 @@ int main() {
   pthread_t test;
   int rc;
   long t = 0;
-  rc = pthread_create(&test, NULL, PrintHello, (void *)t);
+  rc = pthread_create(&test, NULL, QueueManager, (void *)t);
   if (rc) {
     std::cout << "ERROR: " << rc << std::endl;
   }

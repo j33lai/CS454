@@ -1,0 +1,4 @@
+-To compile client and server, please go to directories Client and Server and run "make" to compile them separately.
+-After compiling, stringServer and stringClient are located in directories Server and Client, respectively.
+-Go to the corresponding directories and run ./stringServer and ./stringClient accordingly.
+-References: some code from the resources provided in the assignment is reused and modified.
