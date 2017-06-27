@@ -1,5 +1,9 @@
 *.o
 *.d
+*.a
 stringServer
 stringClient
+server
+client
+binder
 zips
