@@ -5,15 +5,21 @@ BUILDDIR = ./build
 SRC = $(wildcard $(SRCDIR)/*.cpp)
 OBJECTS = $(patsubst $(SRCDIR)/%.cpp, $(BUILDDIR)/%.o, $(SRC))
 DEPENDS = ${OBJECTS:.o=.d}
-LIB = ./lib/librpc.a
+EXEC = binder
+MKDIR = mkdir
 
-${LIB} : ${OBJECTS}
-	ar rcs ${LIB} ${OBJECTS}
+ifeq (,$(wildcard $(BUILDDIR)))
+$(shell $(MKDIR) -p $(BUILDDIR))
+endif
+
+${EXEC} : ${OBJECTS}
+	$(CXX) $(CXXFLAGS) $(OBJECTS) -o $(EXEC)
+
 $(OBJECTS) : $(BUILDDIR)/%.o : $(SRCDIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
+
 -include ${DEPENDS}
 
 .PHONY: clean
 clean:
-	rm  -f $(OBJECTS) $(DEPENDS) $(LIB)
-
+	rm  -f $(OBJECTS) $(DEPENDS) $(EXEC)

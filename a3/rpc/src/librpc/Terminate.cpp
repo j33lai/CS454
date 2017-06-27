@@ -1,7 +1,6 @@
 #include <iostream>
-#include "RPCLibrary.h"
 
-int rpcTerminate() {
+extern "C" int rpcTerminate() {
   std::cout << "rpcTerminate" << std::endl;
   return 5;
 }
