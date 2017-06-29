@@ -92,6 +92,55 @@ void socketInit(int & sockfd, std::string & host, int & port) {
 
 }
 
+void socketConnect(int & sockfd, std::string destHost, std::string destPort) {
+  struct addrinfo hints, *servinfo, *p;
+  int status;
+  char ipstr[INET6_ADDRSTRLEN];
+
+  const char * dest_address = destHost.c_str();;
+  const char * dest_port = destPort.c_str();
+
+
+  if (dest_address == nullptr || dest_port == nullptr) {
+    std::cout << "Destination address or port not found!" << std::endl;
+    exit(1);
+  }
+
+  memset(&hints, 0, sizeof hints);
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_socktype = SOCK_STREAM;
+
+  if ((status = getaddrinfo(dest_address, dest_port, &hints, &servinfo)) != 0) {
+    std::cerr << "getaddrinfo: " << gai_strerror(status) << std::endl;
+    exit(1);
+  }
+
+  for(p = servinfo; p != nullptr; p = p->ai_next) {
+    if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+      std::cerr << "Failed to socket" << std::endl;  
+      continue;
+    }
+
+    if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+      close(sockfd);
+      std::cerr << "Failed to connect" << std::endl;  
+      continue;
+    }
+
+    break;
+  }
+
+  if (p == nullptr) {
+    std::cerr << "Failed to connect" << std::endl;
+    exit(2);
+  }
+
+  inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), ipstr, sizeof ipstr);
+
+  freeaddrinfo(servinfo);
+
+}
+
 void socketClose(int sockfd) {
   close(sockfd);
 }

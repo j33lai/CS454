@@ -70,10 +70,12 @@ void Binder::binderAccept() {
           int size = dealWith(i);
           if (size < 0) {
             fdToSize.erase(i);
+            fdToType.erase(i);
+            fdToBuf.erase(i);
             close(i);
             FD_CLR(i, &master);
           } else {
-            fdToSize[i] = size;
+            handle(i);
           }
         }
       }
@@ -92,26 +94,49 @@ int Binder::dealWith(int new_fd) {
 
   int buf_size, buf_type;
   if ((numbytes = recv(new_fd, &buf_size, 4, 0)) <= 0) {
-    //std::cerr << "Connection " << new_fd << " is closed." << std::endl;
+    std::cerr << "Connection " << new_fd << " is closed." << std::endl;
     return -1;
   } 
 
   if ((numbytes = recv(new_fd, &buf_type, 4, 0)) <= 0) {
-    //std::cerr << "Connection " << new_fd << " is closed." << std::endl;
+    std::cerr << "Connection " << new_fd << " is closed." << std::endl;
     return -1;
-  } else {
-    fdToType[new_fd] = buf_type;
-    fdToBuf[new_fd] = new char[buf_size];
-    return buf_size;
+  } 
+
+  fdToSize[new_fd] = buf_size;
+  fdToType[new_fd] = buf_type;
+  fdToBuf[new_fd] = new char[buf_size];
+  numbytes = recv(new_fd, fdToBuf[new_fd], buf_size, 0); 
+  
+  if (numbytes <= 0) {
+    std::cerr << "Connection " << new_fd <<" is closed." << std::endl;
+    delete [] fdToBuf[new_fd];
+    return -1;
+  }
+
+  return buf_size;
+  
+}
+
+void Binder::handle(int new_fd) {
+  switch(fdToType[new_fd]) {
+    case MSG_BINDER_CLIENT:
+      handleClient(new_fd);
+      break;
+    case MSG_BINDER_SERVER:
+      handleServer(new_fd);
+      break;
+    default:
+      break;
   }
 }
 
-void Binder::handleClient() {
+void Binder::handleClient(int new_fd) {
   std::cout << "handle client" << std::endl;
 }
 
 
-void Binder::handleServer() {
+void Binder::handleServer(int new_fd) {
   std::cout << "handle server" << std::endl;
 }
 
