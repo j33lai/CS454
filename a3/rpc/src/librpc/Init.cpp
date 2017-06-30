@@ -1,34 +1,35 @@
 #include <iostream>
+#include <string>
 #include "SharedValues.h"
 #include "../Connection.h"
 
+int binderSockfd; 
+int clientsSockfd;
+int clientsPort;
+std::string serverAddr;
 
 extern "C" int rpcInit() {
 
   std::cout << "rpcInit" << std::endl;
-  std::cout << "initial value " << clientsSockfd << std::endl;
+  //std::cout << "initial value " << clientsSockfd << std::endl;
 
   //int clientsSockfd, binderSockfd;
-  std::string host = "";
   std::string binder_address = getenv("BINDER_ADDRESS");
   std::string binder_port = getenv("BINDER_PORT");
 
-  int clientsPort;
+  //int clientsPort;
   
-  socketInit(clientsSockfd, host, clientsPort);
+  socketInit(clientsSockfd, serverAddr, clientsPort);
   socketConnect(binderSockfd, binder_address, binder_port);
 
-  std::cout << "ADDRESS " << host << std::endl;
-  std::cout << "CLIENTS_PORT " << clientsPort << std::endl;
+  //std::cout << "ADDRESS " << host << std::endl;
+  //std::cout << "CLIENTS_PORT " << clientsPort << std::endl;
   
 
-  if (host == "" || clientsPort == 0) {
+  if (serverAddr == "" || clientsPort == 0) {
     return -1;
   }
 
-  std::cout << "after value " << clientsSockfd << std::endl;
-
-  while (true) {}
 
   //socketClose(clientsSockfd);
   //socketClose(binderSockfd);

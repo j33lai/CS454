@@ -3,6 +3,7 @@
 #include "../Connection.h"
 
 #include <iostream>
+#include <sstream>
 #include <map>
 #include <string.h>
 #include <stdio.h>
@@ -105,6 +106,7 @@ int Binder::dealWith(int new_fd) {
 
   fdToSize[new_fd] = buf_size;
   fdToType[new_fd] = buf_type;
+  delete [] fdToBuf[new_fd];
   fdToBuf[new_fd] = new char[buf_size];
   numbytes = recv(new_fd, fdToBuf[new_fd], buf_size, 0); 
   
@@ -133,11 +135,51 @@ void Binder::handle(int new_fd) {
 
 void Binder::handleClient(int new_fd) {
   std::cout << "handle client" << std::endl;
+
+  std::string func_name = fdToBuf[new_fd];
+  std::string tmp_name = "Not exist";
+
+  if (binderDb.find(func_name) != binderDb.end()) {
+    tmp_name = binderDb[func_name];
+  }
+
+  int buf_size = tmp_name.length() + 1;
+  int buf_type = MSG_CLIENT_SERVER;
+  char *buf = new char[tmp_name.length() + 1];
+  buf = strcpy(buf, tmp_name.c_str());
+
+  int numbytes, result = 0;
+
+  if ((numbytes = send(new_fd, &buf_size, 4, 0)) == -1) {
+    std::cerr << "Sending msg failed." << std::endl;
+    result = -1;
+  }
+
+  if (result >=0 && (numbytes = send(new_fd, &buf_type, 4, 0)) == -1) {
+    std::cerr << "Sending msg failed." << std::endl;
+    result = -1;
+  }
+
+  if (result >=0 && (numbytes = send(new_fd, buf, buf_size, 0)) == -1) {
+    result = -1;
+    std::cerr << "Sending msg failed." << std::endl;
+  }
+
 }
 
 
 void Binder::handleServer(int new_fd) {
   std::cout << "handle server" << std::endl;
+  std::string tmp = fdToBuf[new_fd];
+  std::vector<std::string> tmp_array = split(tmp, ' '); 
+
+  binderDb[tmp_array[0]] = tmp_array[1] + " " + tmp_array[2];
+  std::cout 
+     << "add function: " 
+     << tmp_array[0] << " "
+     << tmp_array[1] << " "
+     << tmp_array[2] << " "
+     << std::endl;
 }
 
 

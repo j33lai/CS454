@@ -1,4 +1,5 @@
 #include "Connection.h"
+#include "Utils.h"
 
 #include <iostream>
 #include <map>
@@ -117,13 +118,13 @@ void socketConnect(int & sockfd, std::string destHost, std::string destPort) {
 
   for(p = servinfo; p != nullptr; p = p->ai_next) {
     if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-      std::cerr << "Failed to socket" << std::endl;  
+      std::cerr << "Failed to socket:0" << std::endl;  
       continue;
     }
 
     if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
       close(sockfd);
-      std::cerr << "Failed to connect" << std::endl;  
+      std::cerr << "Failed to connect:1" << std::endl;  
       continue;
     }
 
@@ -131,7 +132,7 @@ void socketConnect(int & sockfd, std::string destHost, std::string destPort) {
   }
 
   if (p == nullptr) {
-    std::cerr << "Failed to connect" << std::endl;
+    std::cerr << "Failed to connect:2" << std::endl;
     exit(2);
   }
 
@@ -140,6 +141,70 @@ void socketConnect(int & sockfd, std::string destHost, std::string destPort) {
   freeaddrinfo(servinfo);
 
 }
+
+int socketSend(int sockfd, int type, std::string msg) {
+  int buf_size = msg.length() + 1;
+  int buf_type = type;
+  char *buf = new char[msg.length() + 1];
+  buf = strcpy(buf, msg.c_str());
+
+  int result = 0;
+  int numbytes;
+
+  if ((numbytes = send(sockfd, &buf_size, 4, 0)) == -1) {
+    std::cerr << "Sending msg failed." << std::endl;
+    result = -1;
+  }
+
+  if (result >=0 && (numbytes = send(sockfd, &buf_type, 4, 0)) == -1) {
+    result = -1;
+    std::cerr << "Sending msg failed." << std::endl;
+  }
+
+  if (result >=0 && (numbytes = send(sockfd, buf, buf_size, 0)) == -1) {
+    result = -1;
+    std::cerr << "Sending msg failed." << std::endl;
+  }
+  delete [] buf;
+  return result;
+}
+
+
+int socketRecv(int sockfd, int & size, int & type, std::string & msg) {
+  int numbytes;
+
+  int buf_size, buf_type;
+  if ((numbytes = recv(sockfd, &buf_size, 4, 0)) <= 0) {
+    std::cerr << "Connection " << sockfd << " is closed." << std::endl;
+    return -1;
+  }
+
+  if ((numbytes = recv(sockfd, &buf_type, 4, 0)) <= 0) {
+    std::cerr << "Connection " << sockfd << " is closed." << std::endl;
+    return -1;
+  }
+  
+  size = buf_size;
+  type = buf_type;
+  char * buf = new char[buf_size];  
+
+  //fdToSize[new_fd] = buf_size;
+  //fdToType[new_fd] = buf_type;
+  //delete [] fdToBuf[new_fd];
+  //fdToBuf[new_fd] = new char[buf_size];
+  numbytes = recv(sockfd, buf, buf_size, 0);
+  msg = buf;
+  delete [] buf;
+
+  if (numbytes <= 0) {
+    std::cerr << "Connection " << sockfd <<" is closed." << std::endl;
+    //delete [] fdToBuf[new_fd];
+    return -1;
+  }
+
+  return buf_size;
+}
+
 
 void socketClose(int sockfd) {
   close(sockfd);
