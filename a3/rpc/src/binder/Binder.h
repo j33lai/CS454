@@ -1,4 +1,6 @@
 #pragma once
+#include "../Message.h"
+
 #include <map>
 #include <string>
 
@@ -20,6 +22,8 @@ private:
   std::map<int, int> fdToSize;
   std::map<int, int> fdToType;
   std::map<int, char*> fdToBuf;
+  std::map<int, Message> fdToMsg;
+
   std::map<int, int> fdToRecv;
   std::map<std::string, std::string> binderDb;
 

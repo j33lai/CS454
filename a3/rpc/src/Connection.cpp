@@ -205,6 +205,70 @@ int socketRecv(int sockfd, int & size, int & type, std::string & msg) {
   return buf_size;
 }
 
+int socketSendMsg(int sockfd, int type, const Message & msg) {
+  int buf_size = sizeof msg;
+  int buf_type = type;
+  int *buf_ints = new int[2];
+
+  buf_ints[0] = buf_size;
+  buf_ints[1] = buf_type;
+
+  char *msg_ser = new char[buf_size];
+
+  Message *tmp_msg = new Message(msg);  
+
+  serializeMessage(tmp_msg, msg_ser);
+
+  int result = 0;
+  int numbytes;
+
+  if ((numbytes = send(sockfd, buf_ints, 8, 0)) == -1) {
+    std::cerr << "Sending msg failed." << std::endl;
+    result = -1;
+  }
+
+  if (result >=0 && (numbytes = send(sockfd, msg_ser, buf_size, 0)) == -1) {
+    result = -1;
+    std::cerr << "Sending msg failed." << std::endl;
+  }
+  delete [] buf_ints;
+  delete [] msg_ser;
+  return result;
+
+
+}
+
+
+int socketRecvMsg(int sockfd, int & size, int & type, Message & msg) {
+  int numbytes;
+
+  int *buf_ints = new int[2];
+  if ((numbytes = recv(sockfd, buf_ints, 8, 0)) <= 0) {
+    std::cerr << "Connection " << sockfd << " is closed." << std::endl;
+    delete [] buf_ints;
+    return -1;
+  }
+
+
+  size = buf_ints[0];
+  type = buf_ints[1];
+
+  char *msg_ser = new char[size];
+
+  numbytes = recv(sockfd, msg_ser, size, 0);
+
+  deserializeMessage(msg_ser, &msg);
+
+  delete [] msg_ser;
+
+  if (numbytes <= 0) {
+    std::cerr << "Connection " << sockfd <<" is closed." << std::endl;
+    return -1;
+  }
+
+  return size;
+
+}
 
 void socketClose(int sockfd) {
   close(sockfd);

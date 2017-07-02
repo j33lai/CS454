@@ -73,6 +73,7 @@ void Binder::binderAccept() {
             fdToSize.erase(i);
             fdToType.erase(i);
             fdToBuf.erase(i);
+            fdToMsg.erase(i);
             close(i);
             FD_CLR(i, &master);
           } else {
@@ -91,6 +92,19 @@ void Binder::binderTerminate() {
 }
 
 int Binder::dealWith(int new_fd) {
+  Message msg;
+  int buf_size, buf_type, result; 
+  result = socketRecvMsg(new_fd, buf_size, buf_type, msg);
+  if (result >= 0) {
+    fdToSize[new_fd] = buf_size;
+    fdToType[new_fd] = buf_type;
+    fdToMsg[new_fd] = msg;
+    //fdToBuf[new_fd] = strcpy(fdToBuf[new_fd], msg.funcName.c_str());
+  } 
+
+  return result;
+
+/*
   int numbytes;
 
   int buf_size, buf_type;
@@ -117,7 +131,7 @@ int Binder::dealWith(int new_fd) {
   }
 
   return buf_size;
-  
+*/  
 }
 
 void Binder::handle(int new_fd) {
@@ -170,7 +184,13 @@ void Binder::handleClient(int new_fd) {
 
 void Binder::handleServer(int new_fd) {
   std::cout << "handle server" << std::endl;
-  std::string tmp = fdToBuf[new_fd];
+  Message msg = fdToMsg[new_fd];
+  std::cout 
+    << msg.serverId << " " 
+    << msg.serverPort << " " 
+    << msg.funcName << " "
+    << std::endl;
+/*
   std::vector<std::string> tmp_array = split(tmp, ' '); 
 
   binderDb[tmp_array[0]] = tmp_array[1] + " " + tmp_array[2];
@@ -180,6 +200,7 @@ void Binder::handleServer(int new_fd) {
      << tmp_array[1] << " "
      << tmp_array[2] << " "
      << std::endl;
+*/
 }
 
 

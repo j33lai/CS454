@@ -1,5 +1,7 @@
 #include "SharedValues.h"
 #include "../Utils.h"
+#include "../Message.h"
+#include "../Connection.h"
 
 #include <iostream>
 #include <string>
@@ -18,7 +20,17 @@ std::map<std::string, std::string> serverDb;
 
 extern "C" int rpcRegister(const char* name, int* argTypes, skeleton f) {
   std::cout << "rpcRegister" << std::endl;
+  std::string str_name = name;
+  Message msg(REGISTER, serverAddr, clientsPort, str_name, argTypes);
+  int result = socketSendMsg(binderSockfd, MSG_BINDER_SERVER, msg);
 
+  if (result >=0) {
+    serverDb[str_name]  = str_name + " " + "test";
+  }
+
+  return result;
+
+/*
   std::string tmp_name = name;
   tmp_name += " " + serverAddr + " " + std::to_string(clientsPort);
   std::cout << "server accept port " << clientsPort << std::endl;
@@ -50,5 +62,6 @@ extern "C" int rpcRegister(const char* name, int* argTypes, skeleton f) {
   delete [] buf;
 
   return result;
+*/
 }
 
