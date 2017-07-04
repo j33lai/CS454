@@ -3,7 +3,7 @@
 #include <iostream>
 
 extern "C" int rpcCall(const char* name, int* argTypes, void** args) {
-  std::cout << "rpcCall" << std::endl;
+  //std::cout << "rpcCall: " << args << std::endl;
  
   int sockfd;
   std::string binder_address = getenv("BINDER_ADDRESS");
@@ -16,44 +16,59 @@ extern "C" int rpcCall(const char* name, int* argTypes, void** args) {
   // send to binder:
   std::string tmp_name = name;
 
-  int buf_size = tmp_name.length() + 1;
-  int buf_type = MSG_BINDER_CLIENT;
-  if (socketSend(sockfd, buf_type, tmp_name) < 0) {
+  Message msg(LOC_REQUEST, tmp_name, argTypes);
+
+  if (socketSendMsg(sockfd, MSG_BINDER_CLIENT, msg) < 0) {
     socketClose(sockfd);
+    std::cout << "send to binder failed" << std::endl;
     return -1;
   }
 
   // recv from binder:
-  std::string recv_msg;  
-
-  if (socketRecv(sockfd, buf_size, buf_type, recv_msg) < 0) {
+  Message msg1;
+  int buf_size, buf_type; 
+  if (socketRecvMsg(sockfd, buf_size, buf_type, msg1) < 0) {
     socketClose(sockfd);
+    std::cout << "recv from binder failed" << std::endl;
     return -1;
-  }
+  }  
 
   socketClose(sockfd);
 
-  std::vector<std::string> server_info = split(recv_msg, ' ');
-  if (server_info.size() < 2) {
-    std::cout << "not registered in the binder" << std::endl;
+  if (msg1.mType == LOC_FAILURE) {
+    std::cout << "Did not find the func from binder" << std::endl;
     return -1;
   }
 
-  std::cout << "server info for " << name << " " << server_info[0] << " " << server_info[1] << std::endl;
+  std::string server_name = msg1.serverId;
+  std::string server_port = std::to_string(msg1.serverPort);
 
-  // connect to server
-  socketConnect(sockfd, server_info[0], server_info[1]);
+  // Connect to the server
+  socketConnect(sockfd, server_name, server_port);
 
-  buf_size = tmp_name.length() + 1;
-  buf_type = MSG_CLIENT_SERVER;
-
-  if (socketSend(sockfd, buf_type, tmp_name) < 0) {
-    std::cout << "fail to send to server" << std::endl;
+  Message msg2(EXECUTE, tmp_name, argTypes, args);
+  if (socketSendMsg(sockfd, MSG_CLIENT_SERVER, msg2) < 0) {
     socketClose(sockfd);
+    std::cout << "send to server failed" << std::endl;
     return -1;
-  } else {
-    std::cout << "connected to server" << std::endl;
   }
+
+  // Receive call back
+  Message msg3;
+  msg3.setArgs(args);  
+  if (socketRecvMsg(sockfd, buf_size, buf_type, msg3) < 0) {
+    socketClose(sockfd);
+    std::cout << "recv to binder failed" << std::endl;
+    return -1;
+  }
+
+/*
+  if (msg3.mType == EXECUTE_SUCCESS) {
+    
+    std::cout << "SUCCESS: " << args << std::endl;
+
+  }
+*/
 
   socketClose(sockfd);
 

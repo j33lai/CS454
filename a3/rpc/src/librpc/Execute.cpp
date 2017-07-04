@@ -17,42 +17,51 @@
 
 std::map<int, int> server_fdToSize;
 std::map<int, int> server_fdToType;
-std::map<int, char*> server_fdToBuf;
+std::map<int, Message> server_fdToMsg;
 
 int dealWith(int new_fd) {
-  int numbytes;
-
-  int buf_size, buf_type;
-  if ((numbytes = recv(new_fd, &buf_size, 4, 0)) <= 0) {
-    std::cerr << "ConnectionServerTo " << new_fd << " is closed." << std::endl;
-    return -1;
-  } 
-
-
-  if ((numbytes = recv(new_fd, &buf_type, 4, 0)) <= 0) {
-    std::cerr << "ConnectionServerTo " << new_fd << " is closed." << std::endl;
-    return -1;
-  } 
- 
-  delete [] server_fdToBuf[new_fd];  
-
-  server_fdToSize[new_fd] = buf_size;
-  server_fdToType[new_fd] = buf_type;
-  server_fdToBuf[new_fd] = new char[buf_size];
-  numbytes = recv(new_fd, server_fdToBuf[new_fd], buf_size, 0); 
-  
-  if (numbytes <= 0) {
-    std::cerr << "ConnectionServerTo " << new_fd <<" is closed." << std::endl;
-    delete [] server_fdToBuf[new_fd];
-    return -1;
+  Message msg;
+  int buf_size, buf_type, result;
+  result = socketRecvMsg(new_fd, buf_size, buf_type, msg);
+  if (result >= 0) {
+    server_fdToSize[new_fd] = buf_size;
+    server_fdToType[new_fd] = buf_type;
+    server_fdToMsg[new_fd] = msg;
   }
 
-  return buf_size;
-  
+  return result;  
 }
 
 void handleClient(int new_fd) {
-  std::cout << "handle client " << server_fdToBuf[new_fd] << std::endl;
+  // Execute func and send back to client
+  int result = -1;
+  std::string func_name = server_fdToMsg[new_fd].funcName;
+
+  FuncStorage funcStorage(func_name, server_fdToMsg[new_fd].argTypes);
+  int func_id = funcStorage.findInDb(serverDb);
+
+  if (func_id >= 0) {
+    skeleton fSkeleton = serverDb[func_name][func_id].fSkeleton;
+    int *arg_types = server_fdToMsg[new_fd].getArgTypesPointer();
+    void **args = server_fdToMsg[new_fd].mArgs;
+   
+    // invoke method on the server side 
+    result = fSkeleton(arg_types, args);
+    if (result >= 0) {
+      Message msg(EXECUTE_SUCCESS, func_name, arg_types, args);
+      if (socketSendMsg(new_fd, MSG_CLIENT_SERVER, msg) < 0) {
+        result = -1;
+      }
+    } 
+  } 
+
+  if (result < 0) { 
+    Message msg(EXECUTE_FAILURE, -1);
+    if (socketSendMsg(new_fd, MSG_CLIENT_SERVER, msg) < 0) {
+      result = -1;
+    }
+  }
+  server_fdToMsg[new_fd].deleteArgs();
 }
 
 
@@ -119,7 +128,7 @@ extern "C" int rpcExecute() {
           if (size < 0) {
             server_fdToSize.erase(i);
             server_fdToType.erase(i);
-            server_fdToBuf.erase(i);
+            server_fdToMsg.erase(i); 
             close(i);
             FD_CLR(i, &master);
           } else {

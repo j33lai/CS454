@@ -16,16 +16,23 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
-std::map<std::string, std::string> serverDb;
+std::map<std::string, std::vector<FuncStorage>> serverDb;
+
 
 extern "C" int rpcRegister(const char* name, int* argTypes, skeleton f) {
   std::cout << "rpcRegister" << std::endl;
+  
   std::string str_name = name;
   Message msg(REGISTER, serverAddr, clientsPort, str_name, argTypes);
   int result = socketSendMsg(binderSockfd, MSG_BINDER_SERVER, msg);
 
   if (result >=0) {
-    serverDb[str_name]  = str_name + " " + "test";
+    std::cout << "register: " << *f << std::endl;
+    FuncStorage funcStorage(str_name, msg.argTypes);
+    if (funcStorage.findInDb(serverDb) < 0) {
+      funcStorage.setSkeleton(f);
+      serverDb[str_name].push_back(funcStorage);
+    }
   }
 
   return result;

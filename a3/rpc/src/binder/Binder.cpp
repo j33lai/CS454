@@ -149,14 +149,26 @@ void Binder::handle(int new_fd) {
 
 void Binder::handleClient(int new_fd) {
   std::cout << "handle client" << std::endl;
+  int result;
+  
+  int func_id = hasFunc(fdToMsg[new_fd].funcName, fdToMsg[new_fd].argTypes);
 
-  std::string func_name = fdToBuf[new_fd];
-  std::string tmp_name = "Not exist";
+ 
+  if (func_id >= 0) {
+    std::string server_name = binderFuncs[fdToMsg[new_fd].funcName][func_id].getServerName();
+    int server_port = binderFuncs[fdToMsg[new_fd].funcName][func_id].getServerPort();
 
-  if (binderDb.find(func_name) != binderDb.end()) {
-    tmp_name = binderDb[func_name];
+    Message msg(LOC_SUCCESS, server_name, server_port);
+    result = socketSendMsg(new_fd, MSG_CLIENT_SERVER, msg);
+  } else {
+    Message msg(LOC_FAILURE, -1);
+    result = socketSendMsg(new_fd, MSG_CLIENT_SERVER, msg);
+  }
+  if (result < 0) {
+    std::cout << "Binder handle client failed" << std::endl;
   }
 
+/*
   int buf_size = tmp_name.length() + 1;
   int buf_type = MSG_CLIENT_SERVER;
   char *buf = new char[tmp_name.length() + 1];
@@ -178,7 +190,7 @@ void Binder::handleClient(int new_fd) {
     result = -1;
     std::cerr << "Sending msg failed." << std::endl;
   }
-
+*/
 }
 
 
@@ -190,20 +202,30 @@ void Binder::handleServer(int new_fd) {
     << msg.serverPort << " " 
     << msg.funcName << " "
     << std::endl;
-/*
-  std::vector<std::string> tmp_array = split(tmp, ' '); 
-
-  binderDb[tmp_array[0]] = tmp_array[1] + " " + tmp_array[2];
-  std::cout 
-     << "add function: " 
-     << tmp_array[0] << " "
-     << tmp_array[1] << " "
-     << tmp_array[2] << " "
-     << std::endl;
-*/
+ 
+  // Store func inf in the database
+  int func_id = hasFunc(msg.funcName, msg.argTypes);
+  if (func_id < 0) {
+    FuncStorage funcStorage(msg.funcName, msg.argTypes);
+    funcStorage.addServer(msg.serverId, msg.serverPort);
+    binderFuncs[msg.funcName].push_back(funcStorage);
+  } else {
+    binderFuncs[msg.funcName][func_id].addServer(msg.serverId, msg.serverPort);
+  }
 }
 
-
+int Binder::hasFunc(std::string name, std::vector<int> argTypes) {
+  if (binderFuncs.find(name) != binderFuncs.end()) {
+     int binder_func_name_size = binderFuncs[name].size();
+     for (int i = 0; i < binder_func_name_size; i++) {
+       std::cout << binderFuncs[name][i].fName << std::endl;
+       if (binderFuncs[name][i].equalToFunc(name, argTypes)) {
+          return i;
+       }
+     }
+  }
+  return -1;
+}
 
 
 

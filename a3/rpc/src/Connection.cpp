@@ -118,13 +118,13 @@ void socketConnect(int & sockfd, std::string destHost, std::string destPort) {
 
   for(p = servinfo; p != nullptr; p = p->ai_next) {
     if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-      std::cerr << "Failed to socket:0" << std::endl;  
+      //std::cerr << "Failed to socket:0" << std::endl;  
       continue;
     }
 
     if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
       close(sockfd);
-      std::cerr << "Failed to connect:1" << std::endl;  
+      //std::cerr << "Failed to connect:1" << std::endl;  
       continue;
     }
 
@@ -206,7 +206,7 @@ int socketRecv(int sockfd, int & size, int & type, std::string & msg) {
 }
 
 int socketSendMsg(int sockfd, int type, const Message & msg) {
-  int buf_size = sizeof msg;
+  int buf_size = msg.getSerializationSize();
   int buf_type = type;
   int *buf_ints = new int[2];
 
@@ -233,6 +233,7 @@ int socketSendMsg(int sockfd, int type, const Message & msg) {
   }
   delete [] buf_ints;
   delete [] msg_ser;
+  delete tmp_msg;
   return result;
 
 
