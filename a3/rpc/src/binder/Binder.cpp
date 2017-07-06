@@ -160,16 +160,29 @@ void Binder::handleServer(int new_fd, bool connected) {
     << msg.serverPort << " " 
     << msg.funcName << " "
     << std::endl;
- 
+  int reason_code = 0; 
+
   // Store func inf in the database
-  int func_id = hasFunc(msg.funcName, msg.argTypes);
-  if (func_id < 0) {
-    FuncStorage funcStorage(msg.funcName, msg.argTypes);
-    funcStorage.addServer(msg.serverId, msg.serverPort);
-    binderFuncs[msg.funcName].push_back(funcStorage);
-  } else {
-    binderFuncs[msg.funcName][func_id].addServer(msg.serverId, msg.serverPort);
+  try {
+    int func_id = hasFunc(msg.funcName, msg.argTypes);
+    if (func_id < 0) {
+      FuncStorage funcStorage(msg.funcName, msg.argTypes);
+      funcStorage.addServer(msg.serverId, msg.serverPort);
+      binderFuncs[msg.funcName].push_back(funcStorage);
+    } else {
+      if (binderFuncs[msg.funcName][func_id].addServer(msg.serverId, msg.serverPort) > 0) {
+        reason_code = 1;
+      }
+    }
+  } catch (...) {
+    Message msg2(REGISTER_FAILURE, -2);
+    socketSendMsg(new_fd, MSG_BINDER_CLIENT, msg2);
+    return;
   }
+
+  // Ack
+  Message msg1(REGISTER_SUCCESS, reason_code);
+  socketSendMsg(new_fd, MSG_BINDER_CLIENT, msg1);
 }
 
 int Binder::hasFunc(std::string name, std::vector<int> argTypes) {

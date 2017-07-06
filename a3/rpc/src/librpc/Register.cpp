@@ -25,9 +25,18 @@ extern "C" int rpcRegister(const char* name, int* argTypes, skeleton f) {
   std::string str_name = name;
   Message msg(REGISTER, serverAddr, clientsPort, str_name, argTypes);
   int result = socketSendMsg(binderSockfd, MSG_BINDER_SERVER, msg);
+  
+  if (result < 0) {
+    return result;
+  }
 
-  if (result >=0) {
-    std::cout << "register: " << *f << std::endl;
+  // Ack from binder
+  Message msg1;
+  int buf_size, buf_type; 
+  result = socketRecvMsg(binderSockfd, buf_size, buf_type, msg1);
+
+  // store in local database
+  if (result >=0 && msg1.mType == REGISTER_SUCCESS) {
     pthread_mutex_lock(&serverMutex);
     FuncStorage funcStorage(str_name, msg.argTypes);
     int index = funcStorage.findInDb(serverDb);
@@ -38,6 +47,14 @@ extern "C" int rpcRegister(const char* name, int* argTypes, skeleton f) {
       serverDb[str_name][index].setSkeleton(f);    // override previous registration
     }
     pthread_mutex_unlock(&serverMutex);
+  } 
+
+  if (msg1.mType == REGISTER_FAILURE) {
+    result = msg1.reasonCode;
+  }
+
+  if (result < 0) {
+    std::cout << "REGISTER ERROR: " << result << std::endl;
   }
 
   return result;

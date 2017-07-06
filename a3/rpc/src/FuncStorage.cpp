@@ -4,14 +4,16 @@ FuncStorage::FuncStorage(std::string name, std::vector<int> types):
   fName(name), fArgTypes(types) {
 }
 
-void FuncStorage::addServer(std::string server_name, int server_port) {
+int FuncStorage::addServer(std::string server_name, int server_port) {
   for (unsigned i = 0; i < fServerNames.size(); i++) {
     if (server_name == fServerNames[i] && server_port == fServerPorts[i]) {
-      return; // duplicated registration
+      return 1; // duplicated registration
     }
   }
+
   fServerNames.push_back(server_name);
   fServerPorts.push_back(server_port);
+  return 0;
 }
 
 void FuncStorage::removeServer(int id) {
