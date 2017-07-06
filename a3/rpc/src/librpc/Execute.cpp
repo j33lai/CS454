@@ -32,16 +32,27 @@ int dealWith(int new_fd) {
   return result;  
 }
 
-void handleClient(int new_fd) {
+
+void *handleClientMultiThread(void *ptr_fd) {
   // Execute func and send back to client
+  int new_fd = *reinterpret_cast<int*>(ptr_fd);
+
   int result = -1;
   std::string func_name = server_fdToMsg[new_fd].funcName;
+  skeleton fSkeleton;  
+
+  pthread_mutex_lock(&serverMutex);
 
   FuncStorage funcStorage(func_name, server_fdToMsg[new_fd].argTypes);
   int func_id = funcStorage.findInDb(serverDb);
 
   if (func_id >= 0) {
-    skeleton fSkeleton = serverDb[func_name][func_id].fSkeleton;
+    fSkeleton = serverDb[func_name][func_id].fSkeleton;
+
+  }
+  pthread_mutex_unlock(&serverMutex);
+
+  if (func_id >= 0) {
     int *arg_types = server_fdToMsg[new_fd].getArgTypesPointer();
     void **args = server_fdToMsg[new_fd].mArgs;
    
@@ -62,6 +73,13 @@ void handleClient(int new_fd) {
     }
   }
   server_fdToMsg[new_fd].deleteArgs();
+  pthread_exit(NULL);
+}
+
+void handleClient(int fd) {
+  std::cout << "server handle client: " << fd << std::endl;
+  pthread_t thread_hancle_client;
+  pthread_create(&thread_hancle_client, NULL, handleClientMultiThread, &fd);
 }
 
 

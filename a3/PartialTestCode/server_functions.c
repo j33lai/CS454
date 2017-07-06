@@ -35,6 +35,7 @@ char* f2(float a, double b) {
   str1 = (char *)malloc(100);
 
   sprintf(str1, "%lld%lld", (long long)ai, (long long)bi);
+  sleep(10);
 
   return str1;
 }

@@ -1,5 +1,5 @@
 CXX = g++-5 -std=c++14
-CXXFLAGS = -g -Wall -MMD
+CXXFLAGS = -g -Wall -MMD -pthread
 ARCHIVE = ar rcs
 
 SRCDIR = ./src

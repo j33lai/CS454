@@ -10,6 +10,7 @@ public:
   FuncStorage(std::string name, std::vector<int> types);
   void addServer(std::string server_name, int server_port);
   void removeServer(int id);
+  void removeServer(std::string s);
   void setSkeleton(skeleton f);
 
   std::string getServerName();

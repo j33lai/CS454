@@ -70,6 +70,7 @@ void Binder::binderAccept() {
         } else {
           int size = dealWith(i);
           if (size < 0) {
+            handle(i, false);
             fdToSize.erase(i);
             fdToType.erase(i);
             fdToBuf.erase(i);
@@ -77,7 +78,7 @@ void Binder::binderAccept() {
             close(i);
             FD_CLR(i, &master);
           } else {
-            handle(i);
+            handle(i, true);
           }
         }
       }
@@ -103,52 +104,28 @@ int Binder::dealWith(int new_fd) {
   } 
 
   return result;
-
-/*
-  int numbytes;
-
-  int buf_size, buf_type;
-  if ((numbytes = recv(new_fd, &buf_size, 4, 0)) <= 0) {
-    std::cerr << "Connection " << new_fd << " is closed." << std::endl;
-    return -1;
-  } 
-
-  if ((numbytes = recv(new_fd, &buf_type, 4, 0)) <= 0) {
-    std::cerr << "Connection " << new_fd << " is closed." << std::endl;
-    return -1;
-  } 
-
-  fdToSize[new_fd] = buf_size;
-  fdToType[new_fd] = buf_type;
-  delete [] fdToBuf[new_fd];
-  fdToBuf[new_fd] = new char[buf_size];
-  numbytes = recv(new_fd, fdToBuf[new_fd], buf_size, 0); 
-  
-  if (numbytes <= 0) {
-    std::cerr << "Connection " << new_fd <<" is closed." << std::endl;
-    delete [] fdToBuf[new_fd];
-    return -1;
-  }
-
-  return buf_size;
-*/  
+ 
 }
 
-void Binder::handle(int new_fd) {
+void Binder::handle(int new_fd, bool connected) {
   switch(fdToType[new_fd]) {
     case MSG_BINDER_CLIENT:
-      handleClient(new_fd);
+      handleClient(new_fd, connected);
       break;
     case MSG_BINDER_SERVER:
-      handleServer(new_fd);
+      handleServer(new_fd, connected);
       break;
     default:
       break;
   }
 }
 
-void Binder::handleClient(int new_fd) {
+void Binder::handleClient(int new_fd, bool connected) {
   std::cout << "handle client" << std::endl;
+
+  if (!connected) {  // client has closed connection
+    return;
+  }
   int result;
   
   int func_id = hasFunc(fdToMsg[new_fd].funcName, fdToMsg[new_fd].argTypes);
@@ -167,35 +144,16 @@ void Binder::handleClient(int new_fd) {
   if (result < 0) {
     std::cout << "Binder handle client failed" << std::endl;
   }
-
-/*
-  int buf_size = tmp_name.length() + 1;
-  int buf_type = MSG_CLIENT_SERVER;
-  char *buf = new char[tmp_name.length() + 1];
-  buf = strcpy(buf, tmp_name.c_str());
-
-  int numbytes, result = 0;
-
-  if ((numbytes = send(new_fd, &buf_size, 4, 0)) == -1) {
-    std::cerr << "Sending msg failed." << std::endl;
-    result = -1;
-  }
-
-  if (result >=0 && (numbytes = send(new_fd, &buf_type, 4, 0)) == -1) {
-    std::cerr << "Sending msg failed." << std::endl;
-    result = -1;
-  }
-
-  if (result >=0 && (numbytes = send(new_fd, buf, buf_size, 0)) == -1) {
-    result = -1;
-    std::cerr << "Sending msg failed." << std::endl;
-  }
-*/
 }
 
 
-void Binder::handleServer(int new_fd) {
+void Binder::handleServer(int new_fd, bool connected) {
   std::cout << "handle server" << std::endl;
+  if (!connected) {  // server has closed connection
+    removeServer(new_fd); 
+    return;
+  }
+
   Message msg = fdToMsg[new_fd];
   std::cout 
     << msg.serverId << " " 
@@ -227,7 +185,14 @@ int Binder::hasFunc(std::string name, std::vector<int> argTypes) {
   return -1;
 }
 
-
+void Binder::removeServer(int fd) {
+  std::string server_name = fdToMsg[fd].serverId;
+  for(auto & vs : binderFuncs) {
+    for(auto & v : vs.second) {
+      v.removeServer(server_name);
+    }
+  }
+}
 
 
 

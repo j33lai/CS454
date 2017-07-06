@@ -5,6 +5,11 @@ FuncStorage::FuncStorage(std::string name, std::vector<int> types):
 }
 
 void FuncStorage::addServer(std::string server_name, int server_port) {
+  for (unsigned i = 0; i < fServerNames.size(); i++) {
+    if (server_name == fServerNames[i] && server_port == fServerPorts[i]) {
+      return; // duplicated registration
+    }
+  }
   fServerNames.push_back(server_name);
   fServerPorts.push_back(server_port);
 }
@@ -12,6 +17,18 @@ void FuncStorage::addServer(std::string server_name, int server_port) {
 void FuncStorage::removeServer(int id) {
   fServerNames.erase(fServerNames.begin() + id);
   fServerPorts.erase(fServerPorts.begin() + id);
+}
+
+void FuncStorage::removeServer(std::string s) {
+  unsigned i = 0;
+  while (i < fServerNames.size()) {
+    if (s == fServerNames[i]) {
+      fServerNames.erase(fServerNames.begin() + i);
+      fServerPorts.erase(fServerPorts.begin() + i);
+    } else {
+      i++;
+    }
+  }  
 }
 
 void FuncStorage::setSkeleton(skeleton f) {

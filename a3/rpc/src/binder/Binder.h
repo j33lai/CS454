@@ -15,10 +15,11 @@ public:
 
 private:
   int dealWith(int new_fd);
-  void handle(int new_fd);
-  void handleClient(int new_fd);
-  void handleServer(int new_fd);
+  void handle(int new_fd, bool connected);
+  void handleClient(int new_fd, bool connected);
+  void handleServer(int new_fd, bool connected);
   int hasFunc(std::string name, std::vector<int> argTypes);
+  void removeServer(int fd);
 
   int sockfd;
   std::map<int, int> fdToSize;
@@ -29,6 +30,4 @@ private:
   std::map<int, int> fdToRecv;
 
   std::map<std::string, std::vector<FuncStorage>> binderFuncs;  // func name to func storage
-
-  //std::map<std::string, std::vector<int>> binderDb2;
 };

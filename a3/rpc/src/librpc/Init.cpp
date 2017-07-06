@@ -7,24 +7,24 @@ int binderSockfd;
 int clientsSockfd;
 int clientsPort;
 std::string serverAddr;
+pthread_mutex_t serverMutex;
 
 extern "C" int rpcInit() {
 
   std::cout << "rpcInit" << std::endl;
+  
+  pthread_mutex_init(&serverMutex, NULL);  // init mutex
+
+
   //std::cout << "initial value " << clientsSockfd << std::endl;
 
-  //int clientsSockfd, binderSockfd;
   std::string binder_address = getenv("BINDER_ADDRESS");
   std::string binder_port = getenv("BINDER_PORT");
 
-  //int clientsPort;
   
   socketInit(clientsSockfd, serverAddr, clientsPort);
   socketConnect(binderSockfd, binder_address, binder_port);
 
-  //std::cout << "ADDRESS " << host << std::endl;
-  //std::cout << "CLIENTS_PORT " << clientsPort << std::endl;
-  
 
   if (serverAddr == "" || clientsPort == 0) {
     return -1;
