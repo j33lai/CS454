@@ -1,6 +1,6 @@
 CXX = g++
 LIBDIR = -L../rpc
-LIB = -lrpc
+LIB = -lrpc -pthread
 SERVEROBJECTS = server_functions.o server_function_skels.o server.o
 CLIENTOBJECTS = client1.o
 DEPENDS = ${OBJECTS:.o=.d}
