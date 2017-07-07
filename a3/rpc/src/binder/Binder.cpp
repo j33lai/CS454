@@ -43,6 +43,10 @@ void Binder::binderAccept() {
   FD_SET(sockfd, &master);
   
   while (true) {
+    if (terminating && serverList.size() == 0) {
+      break;
+    }
+
     read_fds = master;
     if (select(fdmax+1, &read_fds, NULL, NULL, NULL) == -1) {
       std::cerr << "ERROR: select" << std::endl;
@@ -127,13 +131,26 @@ void Binder::handleClient(int new_fd, bool connected) {
     return;
   }
   int result;
-  
+
+  // Termination
+  if (fdToMsg[new_fd].mType == TERMINATE) {
+    handleTermination();
+    return;
+  }
+ 
+  std::string func_name = fdToMsg[new_fd].funcName;
   int func_id = hasFunc(fdToMsg[new_fd].funcName, fdToMsg[new_fd].argTypes);
 
  
   if (func_id >= 0) {
-    std::string server_name = binderFuncs[fdToMsg[new_fd].funcName][func_id].getServerName();
-    int server_port = binderFuncs[fdToMsg[new_fd].funcName][func_id].getServerPort();
+    // provide server info to client based on round robin
+    std::pair<std::string, int> server_info = getServerRR(func_name, func_id);
+    std::string server_name = server_info.first;
+    int server_port = server_info.second;    
+
+    // without round robin
+    //std::string server_name = binderFuncs[fdToMsg[new_fd].funcName][func_id].getServerName();
+    //int server_port = binderFuncs[fdToMsg[new_fd].funcName][func_id].getServerPort();
 
     Message msg(LOC_SUCCESS, server_name, server_port);
     result = socketSendMsg(new_fd, MSG_CLIENT_SERVER, msg);
@@ -155,34 +172,46 @@ void Binder::handleServer(int new_fd, bool connected) {
   }
 
   Message msg = fdToMsg[new_fd];
+
+  // testing code to be removed
   std::cout 
     << msg.serverId << " " 
     << msg.serverPort << " " 
     << msg.funcName << " "
     << std::endl;
+  // testing code to be removed
+
   int reason_code = 0; 
 
-  // Store func inf in the database
-  try {
-    int func_id = hasFunc(msg.funcName, msg.argTypes);
-    if (func_id < 0) {
-      FuncStorage funcStorage(msg.funcName, msg.argTypes);
-      funcStorage.addServer(msg.serverId, msg.serverPort);
-      binderFuncs[msg.funcName].push_back(funcStorage);
-    } else {
-      if (binderFuncs[msg.funcName][func_id].addServer(msg.serverId, msg.serverPort) > 0) {
-        reason_code = 1;
-      }
-    }
-  } catch (...) {
-    Message msg2(REGISTER_FAILURE, -2);
-    socketSendMsg(new_fd, MSG_BINDER_CLIENT, msg2);
-    return;
+  if (terminating) {
+    reason_code = -2;  
+  } else {
+    reason_code = addFunc(msg);   
+  }
+ 
+  if (reason_code == 0) {
+    addServer(msg.serverId, msg.serverPort);    // add server info to the list
   }
 
-  // Ack
-  Message msg1(REGISTER_SUCCESS, reason_code);
-  socketSendMsg(new_fd, MSG_BINDER_CLIENT, msg1);
+  if (reason_code >=0) {
+    // Ack success
+    Message msg1(REGISTER_SUCCESS, reason_code);
+    socketSendMsg(new_fd, MSG_BINDER_CLIENT, msg1); 
+  } else {
+    // Ack failure
+    Message msg2(REGISTER_FAILURE, reason_code);
+    socketSendMsg(new_fd, MSG_BINDER_CLIENT, msg2);
+  }
+}
+
+void Binder::handleTermination() {
+  terminating = true;
+  for (unsigned i = 0; i < serverList.size(); i++) {
+    int new_fd;
+    socketConnect(new_fd, serverList[i].first, std::to_string(serverList[i].second));
+    Message msg(TERMINATE);
+    socketSendMsg(new_fd, MSG_BINDER_SERVER, msg);
+  }
 }
 
 int Binder::hasFunc(std::string name, std::vector<int> argTypes) {
@@ -198,14 +227,74 @@ int Binder::hasFunc(std::string name, std::vector<int> argTypes) {
   return -1;
 }
 
-void Binder::removeServer(int fd) {
-  std::string server_name = fdToMsg[fd].serverId;
-  for(auto & vs : binderFuncs) {
-    for(auto & v : vs.second) {
-      v.removeServer(server_name);
+int Binder::addFunc(const Message & msg) {
+  int reason_code = 0;
+  try {
+    int func_id = hasFunc(msg.funcName, msg.argTypes);
+    if (func_id < 0) {
+      FuncStorage funcStorage(msg.funcName, msg.argTypes);
+      funcStorage.addServer(msg.serverId, msg.serverPort);
+      binderFuncs[msg.funcName].push_back(funcStorage);
+    } else {
+      if (binderFuncs[msg.funcName][func_id].addServer(msg.serverId, msg.serverPort) > 0) {
+        reason_code = 1;
+      }
+    }
+  } catch (...) {
+    reason_code = -1;
+  }
+  return reason_code;
+}
+
+void Binder::addServer(std::string name, int port) {
+  for (unsigned i = 0; i < serverList.size(); i++) {
+    if (serverList[i].first == name && serverList[i].second == port) {
+      return;  // server is already registered
+    }
+  }
+  // add server
+  std::cout << "add server" << std::endl;
+  std::pair<std::string, int> new_server(name, port);
+  serverList.push_back(new_server);
+}
+
+void Binder::removeServer(std::string name, int port) {
+  int rr_size = serverList.size();
+  for (int i = 0; i < rr_size; i++) {
+    if (serverList[i].first == name && serverList[i].second == port) {          
+      if (i <= rr_id) {
+        rr_id = (rr_id + rr_size - 1) % rr_size;
+      } 
+      serverList.erase(serverList.begin() + i);
+      break;  
     }
   }
 }
 
+void Binder::removeServer(int fd) {
+  std::string server_name = fdToMsg[fd].serverId;
+  int server_port = fdToMsg[fd].serverPort;
+  for(auto & vs : binderFuncs) {
+    for(auto & v : vs.second) {
+      v.removeServer(server_name, server_port);
+    }
+  }
+  removeServer(server_name, server_port);
+}
 
+
+
+std::pair<std::string, int> Binder::getServerRR(std::string func_name, int func_id) { 
+  FuncStorage funcStorage = binderFuncs[func_name][func_id];
+  int rr_size = serverList.size();
+  int i = (rr_id + 1) % rr_size;
+  while (true) {
+    int id = funcStorage.hasServer(serverList[i].first, serverList[i].second);
+    if (id >= 0) {
+      rr_id = i;
+      return funcStorage.getServer(id); 
+    }
+    i = (i + 1) % rr_size;
+  }  
+}
 

@@ -5,28 +5,26 @@ FuncStorage::FuncStorage(std::string name, std::vector<int> types):
 }
 
 int FuncStorage::addServer(std::string server_name, int server_port) {
-  for (unsigned i = 0; i < fServerNames.size(); i++) {
-    if (server_name == fServerNames[i] && server_port == fServerPorts[i]) {
+  for (unsigned i = 0; i < fServers.size(); i++) {
+    if (server_name == fServers[i].first && server_port == fServers[i].second) {
       return 1; // duplicated registration
     }
   }
 
-  fServerNames.push_back(server_name);
-  fServerPorts.push_back(server_port);
+  std::pair<std::string, int> new_server(server_name, server_port);
+  fServers.push_back(new_server);
   return 0;
 }
 
 void FuncStorage::removeServer(int id) {
-  fServerNames.erase(fServerNames.begin() + id);
-  fServerPorts.erase(fServerPorts.begin() + id);
+  fServers.erase(fServers.begin() + id);
 }
 
-void FuncStorage::removeServer(std::string s) {
+void FuncStorage::removeServer(std::string server_name, int server_port) {
   unsigned i = 0;
-  while (i < fServerNames.size()) {
-    if (s == fServerNames[i]) {
-      fServerNames.erase(fServerNames.begin() + i);
-      fServerPorts.erase(fServerPorts.begin() + i);
+  while (i < fServers.size()) {
+    if (server_name == fServers[i].first && server_port == fServers[i].second) {
+      fServers.erase(fServers.begin() + i);
     } else {
       i++;
     }
@@ -37,6 +35,25 @@ void FuncStorage::setSkeleton(skeleton f) {
   fSkeleton = f;
 }
 
+std::vector<std::pair<std::string, int>> FuncStorage::getServers() {
+  return fServers;
+}
+
+std::pair<std::string, int> FuncStorage::getServer(int i) {
+  return fServers[i];
+}
+
+int FuncStorage::hasServer(std::string server_name, int server_port) {
+  for (unsigned i = 0; i < fServers.size(); i++) {
+    if (server_name == fServers[i].first && server_port == fServers[i].second) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+
+/*
 std::string FuncStorage::getServerName() {
   if (fServerNames.size() > 0) {
     return fServerNames[0];
@@ -52,6 +69,7 @@ int FuncStorage::getServerPort() {
     return 0;
   }
 }
+*/
 
 bool FuncStorage::equalToFunc(std::string name, std::vector<int> types) {
   if (name != fName) {

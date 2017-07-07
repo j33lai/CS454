@@ -18,6 +18,7 @@
 std::map<int, int> server_fdToSize;
 std::map<int, int> server_fdToType;
 std::map<int, Message> server_fdToMsg;
+bool server_terminating;
 
 int dealWith(int new_fd) {
   Message msg;
@@ -83,8 +84,10 @@ void handleClient(int fd) {
 }
 
 
-void handleBinder(int new_fd) {
-  std::cout << "handle binder" << std::endl;
+void handleBinder(int fd) {
+  if (server_fdToMsg[fd].mType == TERMINATE) {
+    server_terminating = true;
+  }
 }
 
 
@@ -104,6 +107,7 @@ void handle(int new_fd) {
 extern "C" int rpcExecute() {
   std::cout << "rpcExecute" << std::endl;
 
+  server_terminating = false;
   int new_fd;
   struct sockaddr_storage their_addr;
   socklen_t sin_size;
@@ -117,6 +121,10 @@ extern "C" int rpcExecute() {
   FD_SET(clientsSockfd, &master);
 
   while (true) {
+    if (server_terminating) {
+      break;
+    }
+
     read_fds = master;
     if (select(fdmax+1, &read_fds, NULL, NULL, NULL) == -1) {
       std::cerr << "ERROR: select" << std::endl;
@@ -157,7 +165,9 @@ extern "C" int rpcExecute() {
     }
 
   }
-    
-  return 1;
+  
+  close(clientsSockfd);
+  close(binderSockfd);
+  return 0;
 }
 
