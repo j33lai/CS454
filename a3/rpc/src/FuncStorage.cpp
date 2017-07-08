@@ -16,6 +16,10 @@ int FuncStorage::addServer(std::string server_name, int server_port) {
   return 0;
 }
 
+void FuncStorage::updateServers(std::vector<std::pair<std::string, int>> servers) {
+  fServers = servers;
+}
+
 void FuncStorage::removeServer(int id) {
   fServers.erase(fServers.begin() + id);
 }
@@ -43,6 +47,10 @@ std::pair<std::string, int> FuncStorage::getServer(int i) {
   return fServers[i];
 }
 
+int FuncStorage::getNumOfServers() {
+  return fServers.size();
+}
+
 int FuncStorage::hasServer(std::string server_name, int server_port) {
   for (unsigned i = 0; i < fServers.size(); i++) {
     if (server_name == fServers[i].first && server_port == fServers[i].second) {
@@ -51,25 +59,6 @@ int FuncStorage::hasServer(std::string server_name, int server_port) {
   }
   return -1;
 }
-
-
-/*
-std::string FuncStorage::getServerName() {
-  if (fServerNames.size() > 0) {
-    return fServerNames[0];
-  } else {
-    return "";
-  }
-}
-
-int FuncStorage::getServerPort() {
-  if (fServerPorts.size() > 0) {
-    return fServerPorts[0];
-  } else {
-    return 0;
-  }
-}
-*/
 
 bool FuncStorage::equalToFunc(std::string name, std::vector<int> types) {
   if (name != fName) {

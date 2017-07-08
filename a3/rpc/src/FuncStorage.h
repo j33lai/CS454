@@ -9,13 +9,17 @@
 class FuncStorage {
 public:
   FuncStorage(std::string name, std::vector<int> types);
+
   int addServer(std::string server_name, int server_port);
+  void updateServers(std::vector<std::pair<std::string, int>> servers); 
+
   void removeServer(int id);
   void removeServer(std::string server_name, int server_port);
   void setSkeleton(skeleton f);
 
   std::vector<std::pair<std::string, int>> getServers();
   std::pair<std::string, int> getServer(int i);
+  int getNumOfServers();
   int hasServer(std::string server_name, int server_port);
 
   //std::string getServerName();

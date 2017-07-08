@@ -89,14 +89,20 @@ void Message::deleteArgs() {
 
 
 void Message::initArgTypes(int *arg_types) {
+  argTypes = getArgTypesVector(arg_types);
+}
+
+std::vector<int> Message::getArgTypesVector(int *arg_types) {
+  std::vector<int> arg_types_vector;
   int *ptr = arg_types;
-  int i = 0;  
+  int i = 0;
   while (ptr != nullptr && *ptr != 0) {
-    argTypes.push_back(*ptr);
+    arg_types_vector.push_back(*ptr);
     ptr++;
     i++;
   }
-  argTypes.push_back(0);
+  arg_types_vector.push_back(0);
+  return arg_types_vector;
 }
 
 int *Message::getArgTypesPointer() {
@@ -124,6 +130,10 @@ int Message::getSerializationSize() const {
 
 void Message::setArgs(void **args) {
   mArgs = args;
+}
+
+void Message::setReasonCode(int code) {
+ reasonCode = code;
 }
 
 void serializeMessage(Message *msg, char *msg_serialized) {

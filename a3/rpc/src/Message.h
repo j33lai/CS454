@@ -19,12 +19,16 @@ public:
   void deleteArgs();  
 
   void initArgTypes(int *arg_types);
+
+  static std::vector<int> getArgTypesVector(int *arg_types);
   int *getArgTypesPointer();
   int getSerializationSize() const;
+
+  void setReasonCode(int code);
   void setArgs(void **args);
 
   int mType;
-  int reasonCode;
+  int reasonCode = 0;
   char serverId[HOST_NAME_SIZE];
   int serverPort;
   char funcName[FUNCTION_NAME_SIZE];
