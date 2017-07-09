@@ -20,8 +20,6 @@ fi
 
 # Set the env variables for this server. Waits for the file to be written to. 
 # todo: add a timeout here
-
-# Just for partial tests
 if [ ! -f ~/a3_env_vars ] ; then
     echo "Couldn't find the env vars file!"
     exit
@@ -36,6 +34,6 @@ echo "Set the binder port to: $BINDER_PORT" >> $CURR_MACHINE_LOG_FILE
 echo "Starting up a server on this machine" >> $CURR_MACHINE_LOG_FILE
 
 
-# Actually startup the partial server
+###### Actually startup the partial server
 $PARTIAL_TEST_FOLDER/server &
 echo "Server started successfully" >> $CURR_MACHINE_LOG_FILE

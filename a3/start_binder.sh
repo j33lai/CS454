@@ -25,10 +25,23 @@ BINDER_PORT=`cat ~/binder.log | tail -n 1 | sed 's/BINDER_PORT //'`
 echo "export BINDER_ADDRESS=${BINDER_ADDRESS}" | tee -a ~/a3_env_vars
 echo "export BINDER_PORT=${BINDER_PORT}" | tee -a ~/a3_env_vars
 
+echo "Started binder successfully"
+
+
 ### SSH into other machines and start servers with this binders variables
+HOSTS=("ubuntu1404-004.student.cs.uwaterloo.ca")
+# "ubuntu1404-004.student.cs.uwaterloo.ca")
+#"ubuntu1404-006.student.cs.uwaterloo.ca" "ubuntu1404-008.student.cs.uwaterloo.ca" "ubuntu1404-010.student.cs.uwaterloo.ca" "ubuntu1404-012.student.cs.uwaterloo.ca")
+
+# Run on the server and put into the HOSTNAME.log
+for server in "${HOSTS[@]}"
+do
+   ssh "$server" '. ~/CS454/a3/set_env_vars.sh; ~/CS454/a3/PartialTestCode/server > `hostname`.log &'
+   echo "$server"
+done
 
 #HOSTS=("ubuntu1204-002" "ubuntu1204-004" "ubuntu1204-006")
 	# ssh into a single machine
 	# run bash ~/CS454/a3/start_single_server.sh
 
-echo "Started binder successfully"
+echo "DONE"
