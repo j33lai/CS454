@@ -36,8 +36,9 @@ HOSTS=("ubuntu1404-004.student.cs.uwaterloo.ca")
 # Run on the server and put into the HOSTNAME.log
 for server in "${HOSTS[@]}"
 do
-   ssh "$server" '. ~/CS454/a3/set_env_vars.sh; ~/CS454/a3/PartialTestCode/server > `hostname`.log &'
-   echo "$server"
+   #ssh "a9palmer@$server" 'ls'
+   #ssh "a9palmer@$server" '. ~/CS454/a3/set_env_vars.sh'
+   ssh "a9palmer@$server" 'ls'
 done
 
 #HOSTS=("ubuntu1204-002" "ubuntu1204-004" "ubuntu1204-006")

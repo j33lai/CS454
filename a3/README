@@ -1,0 +1,6 @@
+Group members: Andrew Palmer (a9palmer), Junyu Lai(j33lai)
+
+1. Run make in the rpc directory;
+2. Run make in the PartialTestCode directory.
+
+There are no other dependencies
