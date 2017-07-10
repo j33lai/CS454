@@ -10,7 +10,7 @@
 FuncDatabase cachedDb;
 
 int requestToBinder(std::string func_name, int* argTypes) {
-  int result;
+  int result = 0;
 
   int sockfd;
   std::string binder_address = getenv("BINDER_ADDRESS");
@@ -81,12 +81,12 @@ std::pair<std::string, int> getServer(std::string func_name, int* argTypes) {
 
   int func_id = cachedDb.findFunc(func_name, arg_types);
   if (func_id < 0) {
+    std::cout << "call binder: " << func_name << std::endl;
     if (requestToBinder(func_name, argTypes) < 0) {
       return std::pair<std::string, int>("", 0);  // request to binder failed 
     }
     func_id = cachedDb.findFunc(func_name, arg_types);  
   } 
-  
   return cachedDb.getServerRR(func_name, func_id); 
 }
 
@@ -125,6 +125,7 @@ extern "C" int rpcCacheCall(const char* name, int* argTypes, void** args) {
   std::string func_name = name;
 
   std::pair<std::string, int> server_info = getServer(func_name, argTypes);
+  std::cout << server_info.first << std::endl;
 
   if (server_info.first == "") {
     return -1;
@@ -141,6 +142,6 @@ extern "C" int rpcCacheCall(const char* name, int* argTypes, void** args) {
       break;
     }
   }
-  
+
   return 0;
 }

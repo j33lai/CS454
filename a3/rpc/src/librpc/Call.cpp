@@ -43,6 +43,8 @@ extern "C" int rpcCall(const char* name, int* argTypes, void** args) {
   std::string server_name = msg1.serverId;
   std::string server_port = std::to_string(msg1.serverPort);
 
+  //std::cout << "round robin" << server_name << std::endl;
+ 
   // Connect to the server
   socketConnect(sockfd, server_name, server_port);
 

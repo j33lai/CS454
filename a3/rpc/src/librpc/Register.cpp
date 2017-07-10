@@ -21,6 +21,18 @@ std::map<std::string, std::vector<FuncStorage>> serverDb;
 
 extern "C" int rpcRegister(const char* name, int* argTypes, skeleton f) {
   std::cout << "rpcRegister" << std::endl;
+  if (server_status < 1) {
+    std::cout << "A server has not been initialized." << std::endl;
+    return -1;
+  }
+
+  if (server_status > 2) {
+    std::cout << "A server is executing." << std::endl;
+    return -1;
+  }
+
+  server_status = 2;
+
   
   std::string str_name = name;
   Message msg(REGISTER, serverAddr, clientsPort, str_name, argTypes);

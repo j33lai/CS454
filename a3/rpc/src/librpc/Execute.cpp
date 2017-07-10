@@ -60,6 +60,7 @@ void *handleClientMultiThread(void *ptr_fd) {
     // invoke method on the server side 
     result = fSkeleton(arg_types, args);
     if (result >= 0) {
+      std::cout << func_name << " : " << *(int *)args[0] << std::endl;
       Message msg(EXECUTE_SUCCESS, func_name, arg_types, args);
       if (socketSendMsg(new_fd, MSG_CLIENT_SERVER, msg) < 0) {
         result = -1;
@@ -78,7 +79,7 @@ void *handleClientMultiThread(void *ptr_fd) {
 }
 
 void handleClient(int fd) {
-  std::cout << "server handle client: " << fd << std::endl;
+  std::cout << "server handle client: " << server_fdToMsg[fd].funcName << std::endl;
   pthread_t thread_hancle_client;
   pthread_create(&thread_hancle_client, NULL, handleClientMultiThread, &fd);
 }
@@ -106,6 +107,12 @@ void handle(int new_fd) {
 
 extern "C" int rpcExecute() {
   std::cout << "rpcExecute" << std::endl;
+  if (server_status < 2) {
+    std::cout << "No function has been registered yet." << std::endl;
+    return -1;
+  } else {
+    server_status = 3;
+  }
 
   server_terminating = false;
   int new_fd;
@@ -168,6 +175,8 @@ extern "C" int rpcExecute() {
   
   close(clientsSockfd);
   close(binderSockfd);
+  
+  server_status = 2;
   return 0;
 }
 

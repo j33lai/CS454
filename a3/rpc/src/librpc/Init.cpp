@@ -8,10 +8,18 @@ int clientsSockfd;
 int clientsPort;
 std::string serverAddr;
 pthread_mutex_t serverMutex;
+int server_status = 0;
 
 extern "C" int rpcInit() {
 
   std::cout << "rpcInit" << std::endl;
+  if (server_status > 0) {
+    std::cout << "A server has already been initialized." << std::endl;
+    return -1;
+  } else {
+    server_status = 1;
+  }
+
   
   pthread_mutex_init(&serverMutex, NULL);  // init mutex
 

@@ -106,7 +106,6 @@ void FuncDatabase::addServerToList(std::string server_name, int server_port) {
     }
   }
   // add server
-  std::cout << "add server" << std::endl;
   std::pair<std::string, int> new_server(server_name, server_port);
   serverList.push_back(new_server);
 }
