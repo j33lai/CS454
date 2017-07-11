@@ -27,19 +27,20 @@ echo "export BINDER_PORT=${BINDER_PORT}" | tee -a ~/a3_env_vars
 
 echo "Started binder successfully"
 
+. ~/CS454/a3/set_env_vars.sh
 
 ### SSH into other machines and start servers with this binders variables
-HOSTS=("ubuntu1404-004.student.cs.uwaterloo.ca")
+#HOSTS=("ubuntu1404-004.student.cs.uwaterloo.ca")
 # "ubuntu1404-004.student.cs.uwaterloo.ca")
 #"ubuntu1404-006.student.cs.uwaterloo.ca" "ubuntu1404-008.student.cs.uwaterloo.ca" "ubuntu1404-010.student.cs.uwaterloo.ca" "ubuntu1404-012.student.cs.uwaterloo.ca")
 
 # Run on the server and put into the HOSTNAME.log
-for server in "${HOSTS[@]}"
-do
+#for server in "${HOSTS[@]}"
+#do
    #ssh "a9palmer@$server" 'ls'
    #ssh "a9palmer@$server" '. ~/CS454/a3/set_env_vars.sh'
-   ssh "a9palmer@$server" 'ls'
-done
+#   ssh "a9palmer@$server" 'ls'
+#done
 
 #HOSTS=("ubuntu1204-002" "ubuntu1204-004" "ubuntu1204-006")
 	# ssh into a single machine
