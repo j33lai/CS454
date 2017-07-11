@@ -136,6 +136,32 @@ int socketConnect(int & sockfd, std::string destHost, std::string destPort) {
   return 0;
 }
 
+int socketSendAll(int sockfd, char* buf, int buf_size) {
+  int sent = 0;
+  int n;
+  while (sent < buf_size) {
+    if ((n = send(sockfd, buf+sent, buf_size-sent, 0)) == -1) {
+      return -1;
+    } else {
+      sent += n;
+    }
+  }
+  return sent;
+}
+
+int socketRecvAll(int sockfd, char* buf, int buf_size) {
+  int recvd = 0;
+  int n;
+  while (recvd < buf_size) {
+    if ((n = recv(sockfd, buf+recvd, buf_size-recvd, 0)) <= 0) {
+      return n;
+    } else {
+      recvd += n;
+    }
+
+  }
+  return recvd;
+}
 
 int socketSendMsg(int sockfd, int type, const Message & msg) {
   int buf_size = msg.getSerializationSize();
@@ -159,7 +185,7 @@ int socketSendMsg(int sockfd, int type, const Message & msg) {
     result = -1;
   }
 
-  if (result >=0 && (numbytes = send(sockfd, msg_ser, buf_size, 0)) == -1) {
+  if (result >=0 && (numbytes = socketSendAll(sockfd, msg_ser, buf_size)) == -1) {
     //std::cerr << "Sending msg failed." << std::endl;
     result = -1;
   }
@@ -186,7 +212,7 @@ int socketRecvMsg(int sockfd, int & size, int & type, Message & msg) {
 
   char *msg_ser = new char[size];
 
-  numbytes = recv(sockfd, msg_ser, size, 0);
+  numbytes = socketRecvAll(sockfd, msg_ser, size);
 
   deserializeMessage(msg_ser, &msg);
 
