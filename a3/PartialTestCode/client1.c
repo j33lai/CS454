@@ -151,6 +151,25 @@ int main() {
     printf("Error: %d\n", s3);
   } 
 
+  s3 = rpcCall("f3", argTypes3, args3);
+  /* test the return of f3 */
+  printf(
+    "\nEXPECTED return of f3 is: 110 109 108 107 106 105 104 103 102 101 11\n"
+  );
+
+  if (s3 >= 0) {
+    printf("ACTUAL return of f3 is: ");
+    int i;
+    for (i = 0; i < 11; i++) {
+      printf(" %ld", *(((long *)args3[0]) + i));
+    }
+    printf("\n");
+  }
+  else {
+    printf("Error: %d\n", s3);
+  }
+
+
   int s4 = rpcCall("f4", argTypes4, args4);
   /* test the return of f4 */
   printf("\ncalling f4 to print an non existed file on the server");

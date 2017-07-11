@@ -77,6 +77,9 @@ extern "C" int rpcCall(const char* name, int* argTypes, void** args) {
   socketClose(sockfd);
 
   if (msg3.mType != EXECUTE_SUCCESS) {    
+    if (msg3.reasonCode < -100) {
+      return -10;  // func execution crashed
+    }
     return -9;
   }
 

@@ -102,7 +102,7 @@ int requestToServer(std::string func_name, std::string server_name, int server_p
   Message msg2(EXECUTE, func_name, argTypes, args);
   if (socketSendMsg(sockfd, MSG_CLIENT_SERVER, msg2) < 0) {
     socketClose(sockfd);
-    std::cerr << "send to server failed" << std::endl;
+    //std::cerr << "send to server failed" << std::endl;
     return -2;
   }
 
@@ -119,6 +119,9 @@ int requestToServer(std::string func_name, std::string server_name, int server_p
   socketClose(sockfd);
 
   if (msg3.mType != EXECUTE_SUCCESS) {
+    if (msg3.reasonCode < -100) {
+      return 2;  // func execution crashed
+    }
     return 1;
   }
 
@@ -155,6 +158,8 @@ extern "C" int rpcCacheCall(const char* name, int* argTypes, void** args) {
     } else {
       if (result_from_server == 1) {
         result = -6;
+      } else if(result_from_server == 2) {
+        result = -7;
       }
       break;
     }

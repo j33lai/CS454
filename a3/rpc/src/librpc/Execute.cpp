@@ -56,9 +56,12 @@ void *handleClientMultiThread(void *ptr_fd) {
   if (func_id >= 0) {
     int *arg_types = server_fdToMsg[new_fd].getArgTypesPointer();
     void **args = server_fdToMsg[new_fd].mArgs;
-   
     // invoke method on the server side 
-    result = fSkeleton(arg_types, args);
+    try {
+      result = fSkeleton(arg_types, args);
+    } catch (...) {
+      result = -101;   // in case of crash
+    }
     if (result >= 0) {
       Message msg(EXECUTE_SUCCESS, func_name, arg_types, args);
       if (socketSendMsg(new_fd, MSG_CLIENT_SERVER, msg) < 0) {
@@ -68,7 +71,7 @@ void *handleClientMultiThread(void *ptr_fd) {
   } 
 
   if (result < 0) { 
-    Message msg(EXECUTE_FAILURE, -1);
+    Message msg(EXECUTE_FAILURE, result);
     if (socketSendMsg(new_fd, MSG_CLIENT_SERVER, msg) < 0) {
       result = -1;
     }
