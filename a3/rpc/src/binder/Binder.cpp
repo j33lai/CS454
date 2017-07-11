@@ -17,7 +17,7 @@
 
 
 Binder::Binder() {
-  std::cout << "Binder:" << std::endl;
+  //std::cout << "Binder:" << std::endl;
 }
 
 void Binder::binderInit() {
@@ -123,7 +123,7 @@ void Binder::handle(int new_fd, bool connected) {
 }
 
 void Binder::handleClient(int new_fd, bool connected) {
-  std::cout << "handle client" << std::endl;
+  //std::cout << "handle client" << std::endl;
 
   if (!connected) {  // client has closed connection
     return;
@@ -188,7 +188,7 @@ void Binder::handleClient(int new_fd, bool connected) {
 
 
 void Binder::handleServer(int new_fd, bool connected) {
-  std::cout << "handle server" << std::endl;
+  //std::cout << "handle server" << std::endl;
 
   Message msg = fdToMsg[new_fd];
 
@@ -196,15 +196,7 @@ void Binder::handleServer(int new_fd, bool connected) {
     funcDatabase.removeServer(msg.serverId, msg.serverPort);
     return;
   }
-
-  // testing code to be removed
-  std::cout 
-    << msg.serverId << " " 
-    << msg.serverPort << " " 
-    << msg.funcName << " "
-    << std::endl;
-  // testing code to be removed
-
+  
   int reason_code = 0; 
 
   if (terminating) {
