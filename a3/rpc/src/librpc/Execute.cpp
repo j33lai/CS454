@@ -73,7 +73,7 @@ void *handleClientMultiThread(void *ptr_fd) {
       result = -1;
     }
   }
-  server_fdToMsg[new_fd].deleteArgs();
+  //server_fdToMsg[new_fd].deleteArgs();
   pthread_exit(NULL);
 }
 
