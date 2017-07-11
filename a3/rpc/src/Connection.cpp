@@ -14,7 +14,7 @@
 #include <netinet/in.h>
 
 
-void socketInit(int & sockfd, std::string & host, int & port) {
+int socketInit(int & sockfd, std::string & host, int & port) {
   int status;
   int yes = 1;
   struct addrinfo hints, *servinfo, *p;
@@ -26,26 +26,25 @@ void socketInit(int & sockfd, std::string & host, int & port) {
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_flags = AI_PASSIVE;
 
-  // 37564
   if ((status = getaddrinfo(NULL, "0", &hints, &servinfo)) != 0) {
-    std::cerr << "getaddrinfo error: " << gai_strerror(status) << std::endl;
-    exit(1);
+    //std::cerr << "Error: getaddrinfo" << gai_strerror(status) << std::endl;
+    return -1;
   }
 
   for(p = servinfo;p != nullptr; p = p->ai_next) {
     if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-      std::cerr << "server: socket" << std::endl;
+      //std::cerr << "Error: socket" << std::endl;
       continue;
     }
 
     if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
-      std::cerr << "setsockopt" << std::endl;
-      exit(1);
+      //std::cerr << "Error: setsockopt" << std::endl;
+      return -2;
     }
 
     if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
       close(sockfd);
-      std::cerr << "server: bind" << std::endl;
+      //std::cerr << "Error: bind" << std::endl;
       continue;
     } else {
       struct sockaddr_storage addr;
@@ -58,22 +57,16 @@ void socketInit(int & sockfd, std::string & host, int & port) {
         struct sockaddr_in *s = (struct sockaddr_in *)&addr;
         //inet_ntop(AF_INET, &s->sin_addr, ipstr, sizeof ipstr);
         port = ntohs(s->sin_port);
-        //std::cout << "ipv4: " << s->sin_port << std::endl;
       } else {
         struct sockaddr_in6 *s = (struct sockaddr_in6 *)&addr;
         //inet_ntop(AF_INET6, &s->sin6_addr, ipstr, sizeof ipstr);
         port = ntohs(s->sin6_port);
-        //std::cout << "ipv6: " << s->sin6_port << std::endl; 
       }
 
       char hostname[128];
       gethostname(hostname, sizeof hostname);
 
       host = std::string(hostname);      
-      //std::cout << "BINDER_ADDRESS " << hostname << std::endl;
-      //std::cout << "BINDER_PORT " << port << std::endl;
-
-
     }
 
     break;
@@ -82,18 +75,19 @@ void socketInit(int & sockfd, std::string & host, int & port) {
   freeaddrinfo(servinfo);
 
   if (p == nullptr)  {
-    std::cerr << "server: failed to bind" <<std::endl;
-    exit(1);
+    //std::cerr << "Error: null server info ptr" <<std::endl;
+    return -3;
   }
 
   if (listen(sockfd, BACKLOG) == -1) {
-    std::cerr << "listen" << std::endl;
-    exit(2);
+    //std::cerr << "Error: listen" << std::endl;
+    return -4;
   }
 
+  return 0;
 }
 
-void socketConnect(int & sockfd, std::string destHost, std::string destPort) {
+int socketConnect(int & sockfd, std::string destHost, std::string destPort) {
   struct addrinfo hints, *servinfo, *p;
   int status;
   char ipstr[INET6_ADDRSTRLEN];
@@ -103,8 +97,8 @@ void socketConnect(int & sockfd, std::string destHost, std::string destPort) {
 
 
   if (dest_address == nullptr || dest_port == nullptr) {
-    std::cout << "Destination address or port not found!" << std::endl;
-    exit(1);
+    //std::cerr << "Error: destination address or port not found!" << std::endl;
+    return -1;
   }
 
   memset(&hints, 0, sizeof hints);
@@ -112,8 +106,8 @@ void socketConnect(int & sockfd, std::string destHost, std::string destPort) {
   hints.ai_socktype = SOCK_STREAM;
 
   if ((status = getaddrinfo(dest_address, dest_port, &hints, &servinfo)) != 0) {
-    std::cerr << "getaddrinfo: " << gai_strerror(status) << std::endl;
-    exit(1);
+    //std::cerr << "Error: getaddrinfo" << std::endl;
+    return -2;
   }
 
   for(p = servinfo; p != nullptr; p = p->ai_next) {
@@ -132,78 +126,16 @@ void socketConnect(int & sockfd, std::string destHost, std::string destPort) {
   }
 
   if (p == nullptr) {
-    std::cerr << "Failed to connect:2" << std::endl;
-    exit(2);
+    //std::cerr << "Error: null server info ptr" << std::endl;
+    return -3;
   }
 
   inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), ipstr, sizeof ipstr);
 
   freeaddrinfo(servinfo);
-
+  return 0;
 }
 
-int socketSend(int sockfd, int type, std::string msg) {
-  int buf_size = msg.length() + 1;
-  int buf_type = type;
-  char *buf = new char[msg.length() + 1];
-  buf = strcpy(buf, msg.c_str());
-
-  int result = 0;
-  int numbytes;
-
-  if ((numbytes = send(sockfd, &buf_size, 4, 0)) == -1) {
-    std::cerr << "Sending msg failed." << std::endl;
-    result = -1;
-  }
-
-  if (result >=0 && (numbytes = send(sockfd, &buf_type, 4, 0)) == -1) {
-    result = -1;
-    std::cerr << "Sending msg failed." << std::endl;
-  }
-
-  if (result >=0 && (numbytes = send(sockfd, buf, buf_size, 0)) == -1) {
-    result = -1;
-    std::cerr << "Sending msg failed." << std::endl;
-  }
-  delete [] buf;
-  return result;
-}
-
-
-int socketRecv(int sockfd, int & size, int & type, std::string & msg) {
-  int numbytes;
-
-  int buf_size, buf_type;
-  if ((numbytes = recv(sockfd, &buf_size, 4, 0)) <= 0) {
-    std::cerr << "Connection " << sockfd << " is closed." << std::endl;
-    return -1;
-  }
-
-  if ((numbytes = recv(sockfd, &buf_type, 4, 0)) <= 0) {
-    std::cerr << "Connection " << sockfd << " is closed." << std::endl;
-    return -1;
-  }
-  
-  size = buf_size;
-  type = buf_type;
-  char * buf = new char[buf_size];  
-
-  //fdToSize[new_fd] = buf_size;
-  //fdToType[new_fd] = buf_type;
-  //delete [] fdToBuf[new_fd];
-  //fdToBuf[new_fd] = new char[buf_size];
-  numbytes = recv(sockfd, buf, buf_size, 0);
-  msg = buf;
-  delete [] buf;
-
-  if (numbytes <= 0) {
-    std::cerr << "Connection " << sockfd <<" is closed." << std::endl;
-    //delete [] fdToBuf[new_fd];
-    return -1;
-  }
-
-  return buf_size;
-}
 
 int socketSendMsg(int sockfd, int type, const Message & msg) {
   int buf_size = msg.getSerializationSize();
@@ -223,20 +155,18 @@ int socketSendMsg(int sockfd, int type, const Message & msg) {
   int numbytes;
 
   if ((numbytes = send(sockfd, buf_ints, 8, 0)) == -1) {
-    std::cerr << "Sending msg failed." << std::endl;
+    //std::cerr << "Sending msg failed." << std::endl;
     result = -1;
   }
 
   if (result >=0 && (numbytes = send(sockfd, msg_ser, buf_size, 0)) == -1) {
+    //std::cerr << "Sending msg failed." << std::endl;
     result = -1;
-    std::cerr << "Sending msg failed." << std::endl;
   }
   delete [] buf_ints;
   delete [] msg_ser;
   delete tmp_msg;
   return result;
-
-
 }
 
 
@@ -245,7 +175,7 @@ int socketRecvMsg(int sockfd, int & size, int & type, Message & msg) {
 
   int *buf_ints = new int[2];
   if ((numbytes = recv(sockfd, buf_ints, 8, 0)) <= 0) {
-    std::cerr << "Connection " << sockfd << " is closed." << std::endl;
+    //std::cerr << "Connection " << sockfd << " is closed." << std::endl;
     delete [] buf_ints;
     return -1;
   }
@@ -263,12 +193,11 @@ int socketRecvMsg(int sockfd, int & size, int & type, Message & msg) {
   delete [] msg_ser;
 
   if (numbytes <= 0) {
-    std::cerr << "Connection " << sockfd <<" is closed." << std::endl;
+    //std::cerr << "Connection " << sockfd <<" is closed." << std::endl;
     return -1;
   }
 
   return size;
-
 }
 
 void socketClose(int sockfd) {

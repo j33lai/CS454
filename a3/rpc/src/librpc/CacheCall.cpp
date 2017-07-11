@@ -16,7 +16,9 @@ int requestToBinder(std::string func_name, int* argTypes) {
   std::string binder_address = getenv("BINDER_ADDRESS");
   std::string binder_port = getenv("BINDER_PORT");
   
-  socketConnect(sockfd, binder_address, binder_port);
+  if (socketConnect(sockfd, binder_address, binder_port) < 0) {
+    return -2;
+  }
 
   // send to binder:
 
@@ -25,8 +27,8 @@ int requestToBinder(std::string func_name, int* argTypes) {
  
   if (socketSendMsg(sockfd, MSG_BINDER_CLIENT, msg) < 0) {
     socketClose(sockfd);
-    std::cout << "send to binder failed" << std::endl;
-    return -1;
+    //std::cerr << "Error: send to binder failed" << std::endl;
+    return -3;
   }
 
   // recv from binder:
@@ -34,14 +36,14 @@ int requestToBinder(std::string func_name, int* argTypes) {
   int buf_size, buf_type;
   if (socketRecvMsg(sockfd, buf_size, buf_type, msg1) < 0) {
     socketClose(sockfd);
-    std::cout << "recv from binder failed" << std::endl;
-    return -1;
+    //std::cerr << "Error: recv from binder failed" << std::endl;
+    return -4;
   }
 
   if (msg1.mType == LOC_FAILURE) {
     socketClose(sockfd);
-    std::cout << "Did not find the func from binder" << std::endl;
-    return -1;
+    //std::cout << "Error: fail to locate the func from binder" << std::endl;
+    return -5;
   }
 
   int num_servers = msg1.reasonCode;
@@ -68,21 +70,19 @@ int requestToBinder(std::string func_name, int* argTypes) {
   FuncStorage funcStorage(msg.funcName, msg.argTypes);
   cachedDb.addFunc(msg.funcName, msg.argTypes, server_list);
 
-
-  //std::string server_name = msg1.serverId;
-  //std::string server_port = std::to_string(msg1.serverPort);
-
   socketClose(sockfd);
   return result; 
 }
 
-std::pair<std::string, int> getServer(std::string func_name, int* argTypes) {
+std::pair<std::string, int> getServer(std::string func_name, int* argTypes, int & reason_code) {
   std::vector<int> arg_types = Message::getArgTypesVector(argTypes);
 
   int func_id = cachedDb.findFunc(func_name, arg_types);
   if (func_id < 0) {
+    // to be commented
     std::cout << "call binder: " << func_name << std::endl;
-    if (requestToBinder(func_name, argTypes) < 0) {
+    reason_code = requestToBinder(func_name, argTypes);
+    if (reason_code < 0) {
       return std::pair<std::string, int>("", 0);  // request to binder failed 
     }
     func_id = cachedDb.findFunc(func_name, arg_types);  
@@ -95,13 +95,15 @@ int requestToServer(std::string func_name, std::string server_name, int server_p
   int sockfd;
 
   // Connect to the server
-  socketConnect(sockfd, server_name, std::to_string(server_port));
+  if (socketConnect(sockfd, server_name, std::to_string(server_port)) < 0) {
+    return -1;
+  }
 
   Message msg2(EXECUTE, func_name, argTypes, args);
   if (socketSendMsg(sockfd, MSG_CLIENT_SERVER, msg2) < 0) {
     socketClose(sockfd);
-    std::cout << "send to server failed" << std::endl;
-    return -1;
+    std::cerr << "send to server failed" << std::endl;
+    return -2;
   }
 
   // Receive call back
@@ -110,38 +112,53 @@ int requestToServer(std::string func_name, std::string server_name, int server_p
   int buf_size, buf_type;
   if (socketRecvMsg(sockfd, buf_size, buf_type, msg3) < 0) {
     socketClose(sockfd);
-    std::cout << "recv to binder failed" << std::endl;
-    return -1;
+    std::cerr << "recv to binder failed" << std::endl;
+    return -3;
   }
 
   socketClose(sockfd);
+
+  if (msg3.mType != EXECUTE_SUCCESS) {
+    return 1;
+  }
 
   return 0;
 }
 
 extern "C" int rpcCacheCall(const char* name, int* argTypes, void** args) {
-  std::cout << "rpcCacheCall" << std::endl;
-  
-  std::string func_name = name;
-
-  std::pair<std::string, int> server_info = getServer(func_name, argTypes);
-  std::cout << server_info.first << std::endl;
-
-  if (server_info.first == "") {
+  //std::cout << "rpcCacheCall" << std::endl;
+  int result = 0; 
+ 
+  if ( getenv("BINDER_ADDRESS") == NULL || getenv("BINDER_PORT") == NULL) {
+    //std::cerr << "Error: Cannot find the binder info" << std::endl;
     return -1;
   }
 
+  std::string func_name = name;
+
+  std::pair<std::string, int> server_info = getServer(func_name, argTypes, result);
+
+  //std::cout << server_info.first << std::endl;
+
+  if (result < 0) {
+    return result;
+  }
+
   while (true) {
-    if (requestToServer(func_name, server_info.first, server_info.second, argTypes, args) < 0) {
+    int result_from_server = requestToServer(func_name, server_info.first, server_info.second, argTypes, args);
+    if (result_from_server < 0) {
       cachedDb.removeServer(server_info.first, server_info.second);
-      server_info = getServer(func_name, argTypes);
-      if (server_info.first == "") {
-        return -1;
+      server_info = getServer(func_name, argTypes, result);
+      if (result < 0) {
+        return result;
       }
     } else {
+      if (result_from_server == 1) {
+        result = -6;
+      }
       break;
     }
   }
 
-  return 0;
+  return result;
 }
