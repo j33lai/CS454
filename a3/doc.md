@@ -64,7 +64,7 @@ Two functions are considered equal iff:
 
 #### Client
 
-When a client calls `rpcTerminate()`, it sends a terminate call to the binder.
+When a client calls `rpcTerminate()`, it sends a terminate call to the binder. In the event that a single client calls `rpcTerminate()`, if there are any RPC procedures currently being executed, they exit immediately with the appropriate exit code.
 
 #### Binder
 
