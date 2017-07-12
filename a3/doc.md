@@ -78,7 +78,7 @@ Upon receiving a terminate call from the binder, a server closes all of its sock
 
 ### <u>Optimizations</u>
 
-<u>TODO</u>
+N/A
 
 ### <u>Error codes</u>
 
@@ -157,11 +157,20 @@ N/A
 
 ### <u>Caching mechanism</u>
 
-TODO
+When a client calls `rpcCacheCall()` it sequentially checks the local database for a matching server. If a function exists in the database, the client makes a direct request to the server. If a matching server couldn't be found, the client queries the binder for one that can service its request. If the request fails, it searches in the cache for another server that can handle its request. If the client is unable to make a….**TODO**
 
 #### Round robin
 
-TODO
+**TODO**: Explain the underlying mechanism
+
+Example: Server A, B, C are started in order and have the functions:
+
+A:   a(), b()
+B:   b(), c()
+C:   c(), a()
+
+The client makes the following requests sequentially: ` a a b b c c`
+These request are handled in the following order: `A C B A C B `
 
 ### <u>Extra functionality</u>
 
