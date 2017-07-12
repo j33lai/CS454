@@ -10,13 +10,13 @@ We implement a **Message** class, which handles the marshalling, and unmarshalli
 
 #### Serialization and Deserialization
 
-Serialization is implemented using fixed-length fields in a byte array for the whole message. Each index position has a specific meaning and the array has a specific structure that is shared across the system. The array is ordered as follows:
+Serialization is implemented using fixed-length fields in a byte array for the whole message. Each index position has a specific meaning and the array has a specific structure that is shared across the system. The data will be serialized/deserialized to/from a sequence of characters, in the following order:
 
-ArgTypes (4 bytes) — Reason Code (4 bytes) — Port (4 bytes) — Host (128 bytes) — Name (64 bytes)
+Message type (4 bytes) — Reason Code (4 bytes) — Port (4 bytes) — Host (128 bytes) — Name (64 bytes) — Arg Type (if applicable) — Arguments (if applicable)
 
-The message is deserialized according to this order as well.
+The serialization/deserialization of arguments can be determined by the argument types.
 
-The argument type sizes are specified as follows:
+##### The argument type sizes are specified as follows:
 
 | Argument type | Size (bytes) |
 | ------------- | ------------ |
@@ -27,17 +27,19 @@ The argument type sizes are specified as follows:
 | Double        | 8            |
 | Float         | 4            |
 
-#### Sending and receiving (talk about buffer)
-
-<u>TODO</u>
-
 ### <u>Structure of binder database</u>
 
-Procedures in our system are represented by a **FuncStorage** object, which has the necessary properties for a function. The relevant properties for the binder are: *function name*, *function argument types*, the *list of servers* (represented by a string for the host, and an integer for the port) that have registered this function. The binder contains a Map data structure, indexed by function name, where the values are vectors of FuncStorage objects.
+Procedures in our system are represented by a **FuncStorage** object, which has the necessary properties for an RPC. The relevant properties for the binder are: *function name*, *function argument types*, the *list of servers* (represented by a string for the host, and an integer for the port) that have registered this function.
+
+The database is represented by the class `FuncDatabase` and contains:
+
+- A Map data structure, indexed by function name, where the values are vectors of FuncStorage objects.
+- A vector of servers that have an active connection to the binder
+- A round robin index that represents the token
 
 ### <u>Function overloading</u>
 
-The Map data structured is indexed by function name, and if there is no corresponding key existing for a currently registering function, this means that a new entry will have to be made in the database. Accordingly, a new entry with the function name, and server info is created.
+The Map data structure is indexed by function name, and if there is no corresponding key existing for a currently registering function, this means that a new entry will have to be made in the database. Accordingly, a new entry with the function name, and server info is created according to the database scheme.
 
 If the function already exists in the map, then the corresponding list of servers is retrieved from the database, and scanned. If the server also exists, then no changes are made to the database. If the server does not exist, then it is added to the list of servers for this function.
 
@@ -53,6 +55,8 @@ Two functions are considered equal iff they satisfy the following conditions:
 - They have the same argument types,
 - They have the same argument order
 
+
+Note: If an argument is an array, then the length of the array is ignored.
 
 ### <u>Round-robin scheduling</u>
 
@@ -70,7 +74,7 @@ The binder has a single boolean variable, **terminate**, that tracks whether or 
 
 The binder also maintains a list of servers that it has an active connection to.
 
-On the receipt of a termination call, the binder sets the terminate variable to true and begins sending out termination requests to servers. After a termination request is sent out to a server, the binder removes it from the list. Once the list of servers is empty, the binder itself closes its socket and breaks its infinite loop.
+On receipt of a termination call, the binder sets the **terminate** variable to true and begins sending out termination requests to servers. After a termination request is sent out to a server, the binder removes it from the list. Once the list of servers is empty, the binder itself closes its socket, breaks its infinite loop, and then exits.
 
 #### Server
 
@@ -157,15 +161,15 @@ All functionality has been implemented, including caching.
 
 ### <u>Caching mechanism</u>
 
-When a client calls `rpcCacheCall()` it sequentially checks the local database for a matching server. If a function exists in the database, the client makes a direct request to the server. If a matching server couldn't be found, the client queries the binder for one that can service its request. If the request fails, it searches in the cache for another server that can handle its request. 
+When a client calls `rpcCacheCall()` it sequentially checks the local database for a matching server. If a function exists, the client makes a direct request to the server. If a matching server couldn't be found, the client queries the binder for one that can service its request. If the request fails, it searches in the cache for another server that can handle it. 
 
-If the client is unable to have its request fulfilled by the servers in the cache, it requests an updated list of servers from the binder for the given remote procedure. It then retries all the servers to fulfill its remote procedure call, returning with a code indicative of its execution status.
+If the client iterates through all the servers in its local cache, and is still unable to have its request fulfilled, it requests an updated list of servers from the binder for the given remote procedure. It then caches these, and then sequentially tries servers to fulfill the remote procedure call, returning with a code indicative of the execution status.
 
 #### Round robin
 
 For RPC calls where the functions are all contained in the local cache, round robin functions identically to the non-caching method.
 
-The special case for round robin scheduling for `rpcCacheCall()` is when the client can't find a server to handle a function in its local cache. The client must then retrieve the necessary server information from the binder. The retrieved servers are added to the end of the client's local database, which guarantees that the token is passed sequentially in the correct order.
+The special case for round robin scheduling for `rpcCacheCall()` is when the client can't find a server to handle a function in its local cache. The client must then retrieve the necessary server information from the binder. On retrieval, the servers are added to the *end* of the client's local cache, which guarantees that the token is passed sequentially in the correct order.
 
 <u>Example:</u>
 
@@ -180,7 +184,3 @@ C:   z(), x()
 and the client makes the following requests sequentially: ` x x y y z z`
 
 The requests will be handled in the following order: `A C B A C B `
-
-### <u>Extra functionality</u>
-
-No extra functionality has been implemented.
