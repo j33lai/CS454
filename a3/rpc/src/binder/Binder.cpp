@@ -147,8 +147,6 @@ void Binder::handleClient(int new_fd, bool connected) {
     reason_code = func_id < 0? func_id : reason_code;
   }
 
-  int result;
-
   if (func_id >= 0) {
     if (fdToMsg[new_fd].reasonCode == 1) {
       // Handle cache call request from client
@@ -157,10 +155,10 @@ void Binder::handleClient(int new_fd, bool connected) {
       Message msg(LOC_SUCCESS, func_servers[0].first, func_servers[0].second);
       // Include the number of servers
       msg.setReasonCode(num_servers);      
-      result = socketSendMsg(new_fd, MSG_CLIENT_SERVER, msg);
+      socketSendMsg(new_fd, MSG_CLIENT_SERVER, msg);
       for (int i = 1; i < num_servers; i++) {
         Message msg1(LOC_SUCCESS, func_servers[i].first, func_servers[i].second);
-        result = socketSendMsg(new_fd, MSG_CLIENT_SERVER, msg1); 
+        socketSendMsg(new_fd, MSG_CLIENT_SERVER, msg1); 
       } 
     } else {
       // Handle usual call request from client
@@ -174,15 +172,11 @@ void Binder::handleClient(int new_fd, bool connected) {
       //int server_port = binderFuncs[fdToMsg[new_fd].funcName][func_id].getServerPort();
 
       Message msg(LOC_SUCCESS, server_name, server_port);
-      result = socketSendMsg(new_fd, MSG_CLIENT_SERVER, msg);
+      socketSendMsg(new_fd, MSG_CLIENT_SERVER, msg);
     }
   } else {
     Message msg(LOC_FAILURE, reason_code);
-    result = socketSendMsg(new_fd, MSG_CLIENT_SERVER, msg);
-  }
-
-  if (result < 0) {
-    std::cout << "Binder handle client failed" << std::endl;
+    socketSendMsg(new_fd, MSG_CLIENT_SERVER, msg);
   }
 }
 

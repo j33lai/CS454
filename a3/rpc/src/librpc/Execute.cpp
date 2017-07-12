@@ -83,7 +83,7 @@ void *handleClientMultiThread(void *ptr_fd) {
 
 void handleClient(int fd) {
   // to be commented later 
-  std::cout << "server handle client: " << server_fdToMsg[fd].funcName << std::endl;
+  //std::cout << "server handle client: " << server_fdToMsg[fd].funcName << std::endl;
   pthread_t thread_handle_client;
   pthread_create(&thread_handle_client, NULL, handleClientMultiThread, &fd);
   runningThreads.push_back(thread_handle_client);
