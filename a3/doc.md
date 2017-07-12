@@ -78,7 +78,7 @@ Upon receiving a terminate call from the binder, a server closes all of its sock
 
 ### <u>Optimizations</u>
 
-N/A
+No extra optimizations have been implemented.
 
 ### <u>Error codes</u>
 
