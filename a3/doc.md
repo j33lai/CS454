@@ -163,16 +163,23 @@ If the client is unable to have its request fulfilled by the servers in the cach
 
 #### Round robin
 
-**TODO**: Explain the underlying mechanism
+For RPC calls where the functions are all contained in the local cache, round robin functions identically to the non-caching method.
 
-Example: Server A, B, C are started in order and have the functions:
+The special case for round robin scheduling for `rpcCacheCall()` is when the client can't find a server to handle a function in its local cache. The client must then retrieve the necessary server information from the binder. The retrieved servers are added to the end of the client's local database, which guarantees that the token is passed sequentially in the correct order.
 
-A:   a(), b()
-B:   b(), c()
-C:   c(), a()
+<u>Example:</u>
 
-The client makes the following requests sequentially: ` a a b b c c`
-These request are handled in the following order: `A C B A C B `
+Servers A, B, C are started in order and have the functions:
+
+```
+A:   x(), y()
+B:   y(), z()
+C:   z(), x()
+```
+
+and the client makes the following requests sequentially: ` x x y y z z`
+
+The requests will be handled in the following order: `A C B A C B `
 
 ### <u>Extra functionality</u>
 
