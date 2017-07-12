@@ -153,11 +153,13 @@ N/A
 
 ### <u>Missing functionality</u>
 
-N/A
+All functionality has been implemented, including caching.
 
 ### <u>Caching mechanism</u>
 
-When a client calls `rpcCacheCall()` it sequentially checks the local database for a matching server. If a function exists in the database, the client makes a direct request to the server. If a matching server couldn't be found, the client queries the binder for one that can service its request. If the request fails, it searches in the cache for another server that can handle its request. If the client is unable to make a….**TODO**
+When a client calls `rpcCacheCall()` it sequentially checks the local database for a matching server. If a function exists in the database, the client makes a direct request to the server. If a matching server couldn't be found, the client queries the binder for one that can service its request. If the request fails, it searches in the cache for another server that can handle its request. 
+
+If the client is unable to have its request fulfilled by the servers in the cache, it requests an updated list of servers from the binder for the given remote procedure. It then retries all the servers to fulfill its remote procedure call, returning with a code indicative of its execution status.
 
 #### Round robin
 
