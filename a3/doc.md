@@ -82,7 +82,7 @@ N/A
 
 ### <u>Error codes</u>
 
-#### Init:
+#### 1. Init:
 
 ##### Warning:
 
@@ -95,7 +95,7 @@ N/A
 -3 : Fail to get the server address or the port number for the accepting socket mentioned above
 -4 : Fail to connect to the binder
 
-#### Register:
+#### 2. Register:
 
 ##### Warning:
 
@@ -109,13 +109,13 @@ N/A
 -4: fail to receive message from binder
 -5: registration failed
 
-#### Execute:
+#### 3. Execute:
 
 ##### Error:
 
 -1: no function has been registered yet
 
-#### Call:
+#### 4. Call:
 
 ##### Error:
 
@@ -130,7 +130,7 @@ N/A
 -9: Execution of func failed
 -10: Execution of func crashed
 
-#### Terminate:
+#### 5. Terminate:
 
 ##### Error:
 
@@ -138,7 +138,7 @@ N/A
 -2: Fail to connect to the binder
 -3: Fail to send the termination message to the binder
 
-#### CacheCall:
+#### 6. CacheCall:
 
 ##### Error:
 
