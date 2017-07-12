@@ -18,6 +18,7 @@
 std::map<int, int> server_fdToSize;
 std::map<int, int> server_fdToType;
 std::map<int, Message> server_fdToMsg;
+std::vector<pthread_t> runningThreads;
 bool server_terminating;
 
 int dealWith(int new_fd) {
@@ -83,13 +84,20 @@ void *handleClientMultiThread(void *ptr_fd) {
 void handleClient(int fd) {
   // to be commented later 
   std::cout << "server handle client: " << server_fdToMsg[fd].funcName << std::endl;
-  pthread_t thread_hancle_client;
-  pthread_create(&thread_hancle_client, NULL, handleClientMultiThread, &fd);
+  pthread_t thread_handle_client;
+  pthread_create(&thread_handle_client, NULL, handleClientMultiThread, &fd);
+  runningThreads.push_back(thread_handle_client);
 }
 
 
 void handleBinder(int fd) {
   if (server_fdToMsg[fd].mType == TERMINATE) {
+    // Uncomment the following code if you want to wait for the func execution before termination
+    /*
+    for (unsigned i = 0; i < runningThreads.size(); i++) {
+      pthread_join(runningThreads[i], 0);
+    }
+    */
     server_terminating = true;
   }
 }
