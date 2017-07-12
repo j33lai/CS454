@@ -183,4 +183,4 @@ The requests will be handled in the following order: `A C B A C B `
 
 ### <u>Extra functionality</u>
 
-<u>TODO</u>
+No extra functionality has been implemented.
