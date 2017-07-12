@@ -14,7 +14,7 @@ extern "C" int rpcInit() {
   //std::cout << "rpcInit" << std::endl;
 
   if (server_status > 0) {
-    std::cout << "A server has already been initialized." << std::endl;
+    //std::cout << "A server has already been initialized." << std::endl;
     return 1;
   } else {
     server_status = 1;
