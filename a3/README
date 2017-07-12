@@ -1,7 +1,18 @@
 Group members: Andrew Palmer (a9palmer), Junyu Lai(j33lai)
 
-1. Run make in the rpc directory;
-2. Run make in the PartialTestCode directory.
+To compile the rpc library, run: 
+make 
+in the rpc directory;
 
-Dependencies:
-- lpthread
+To compile the PartialTestCode, run:
+make clean; make
+int the PartialTestCode directory;
+
+To compile the custom client or server, add -pthread to it compile the code as follows:
+g++ -L. client.o -lrpc -pthread -o client
+g++ -L. serverfunctions.o serverfunctionskels.o server.o -lrpc -pthread -o server
+(assuming librpc.a is placed in the current directory and the above.o files are correctly generated)
+
+To recompile the client or server, make sure to clean up all files generated from previous compilation first, if
+librpc.a has been modified.
+

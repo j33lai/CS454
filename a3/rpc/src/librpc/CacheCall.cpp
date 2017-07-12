@@ -80,7 +80,7 @@ std::pair<std::string, int> getServer(std::string func_name, int* argTypes, int 
   int func_id = cachedDb.findFunc(func_name, arg_types);
   if (func_id < 0) {
     // to be commented
-    std::cout << "call binder: " << func_name << std::endl;
+    //std::cout << "call binder: " << func_name << std::endl;
     reason_code = requestToBinder(func_name, argTypes);
     if (reason_code < 0) {
       return std::pair<std::string, int>("", 0);  // request to binder failed 
