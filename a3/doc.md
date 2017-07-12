@@ -66,7 +66,7 @@ Note: If an argument is an array, then the length of the array is ignored.
 
 #### Client
 
-When a client calls `rpcTerminate()`, it sends a terminate call to the binder. In the event that a single client calls `rpcTerminate()`, if there are any RPC procedures currently being executed, they exit immediately with the appropriate exit code.
+When a client calls `rpcTerminate()`, it sends a terminate call to the binder. In the event that a client calls `rpcTerminate()`, if there are any RPC procedures currently being executed, they exit immediately with the appropriate exit code. The reason for this is in the event that a server is executing a function that takes an extended period of time. If you want to configure servers to wait for all executions to terminate, then you can uncomment lines 96-100 in `rpc/src/librpc/Execute.cpp` and recompile the rpc library and server.
 
 #### Binder
 
